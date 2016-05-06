@@ -29,3 +29,4 @@ FOUNDATION_EXPORT double DFULibraryVersionNumber;
 FOUNDATION_EXPORT const unsigned char DFULibraryVersionString[];
 
 // In this header, you should import all the public headers of your framework using statements like #import <DFULibrary/PublicHeader.h>
+#import "IntelHex2BinConverter.h"

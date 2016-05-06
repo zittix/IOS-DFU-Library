@@ -47,7 +47,7 @@
 		5254A93F1C72269D00AA1164 /* EVObjectDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5254A9381C72269D00AA1164 /* EVObjectDescription.swift */; };
 		5254A9411C72269D00AA1164 /* EVReflection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5254A93A1C72269D00AA1164 /* EVReflection.swift */; };
 		5254A9421C72269D00AA1164 /* EVWorkaroundHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5254A93B1C72269D00AA1164 /* EVWorkaroundHelpers.swift */; };
-		525EF60C1C737941009260A7 /* IntelHex2BinConverter.h in Headers */ = {isa = PBXBuildFile; fileRef = 525EF60A1C737941009260A7 /* IntelHex2BinConverter.h */; };
+		525EF60C1C737941009260A7 /* IntelHex2BinConverter.h in Headers */ = {isa = PBXBuildFile; fileRef = 525EF60A1C737941009260A7 /* IntelHex2BinConverter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		525EF60D1C737941009260A7 /* IntelHex2BinConverter.m in Sources */ = {isa = PBXBuildFile; fileRef = 525EF60B1C737941009260A7 /* IntelHex2BinConverter.m */; };
 		525EF6101C737A67009260A7 /* DFUStreamHex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525EF60F1C737A67009260A7 /* DFUStreamHex.swift */; };
 		525EF6141C74BAAD009260A7 /* DFUPeripheral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525EF6131C74BAAD009260A7 /* DFUPeripheral.swift */; };
@@ -127,7 +127,6 @@
 		5254A9441C7226D300AA1164 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		525EF60A1C737941009260A7 /* IntelHex2BinConverter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IntelHex2BinConverter.h; path = HexToBinConverter/IntelHex2BinConverter.h; sourceTree = "<group>"; };
 		525EF60B1C737941009260A7 /* IntelHex2BinConverter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = IntelHex2BinConverter.m; path = HexToBinConverter/IntelHex2BinConverter.m; sourceTree = "<group>"; };
-		525EF60E1C737977009260A7 /* module.modulemap */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; name = module.modulemap; path = HexToBinConverter/module.modulemap; sourceTree = "<group>"; };
 		525EF60F1C737A67009260A7 /* DFUStreamHex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DFUStreamHex.swift; sourceTree = "<group>"; };
 		525EF6131C74BAAD009260A7 /* DFUPeripheral.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DFUPeripheral.swift; sourceTree = "<group>"; };
 		525EF6161C74DD63009260A7 /* DFUVersion.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DFUVersion.swift; sourceTree = "<group>"; };
@@ -272,7 +271,6 @@
 		525EF6091C7378F5009260A7 /* Hex to Bin Converter */ = {
 			isa = PBXGroup;
 			children = (
-				525EF60E1C737977009260A7 /* module.modulemap */,
 				525EF60A1C737941009260A7 /* IntelHex2BinConverter.h */,
 				525EF60B1C737941009260A7 /* IntelHex2BinConverter.m */,
 			);

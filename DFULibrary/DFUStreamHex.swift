@@ -20,7 +20,6 @@
 * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import HexToBinConverter
 
 internal class DFUStreamHex : DFUStream {
     private(set) var currentPart = 1
