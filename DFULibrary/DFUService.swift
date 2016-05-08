@@ -95,11 +95,11 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      */
     func isInApplicationMode() -> Bool? {
         // If DFU Version characteritsic returned a correct value...
-        if let version = version {
+        /*if let version = version {
             // The app with buttonless update always returns value 0x0100 (major: 0, minor: 1). Otherwise it's in DFU mode.
             // See the documentation for DFUServiceInitiator.forceDfu(:Bool) for details about supported versions.
             return version.major == 0 && version.minor == 1
-        }
+        }*/
         
         // The mbed implementation of DFU does not have DFU Packet characteristic in application mode
         if dfuPacketCharacteristic == nil {
