@@ -102,15 +102,6 @@ The type of the BIN or HEX file.
         fileUrl = urlToZipFile
         fileName = urlToZipFile.lastPathComponent!
         
-        // Quickly check if it's a ZIP file
-        let ext = urlToZipFile.pathExtension
-        if ext == nil || ext!.caseInsensitiveCompare("zip") != .OrderedSame {
-            NSLog("\(self.fileName) is not a ZIP file")
-            stream = nil
-            super.init()
-            return nil
-        }
-        
         do {
             stream = try DFUStreamZip(urlToZipFile: urlToZipFile, type: type.rawValue)
         } catch let error as NSError {
