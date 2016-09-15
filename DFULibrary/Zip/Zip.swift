@@ -10,20 +10,20 @@ import Foundation
 import minizip
 
 /// Zip error type
-internal enum ZipError: Error {
+internal enum ZipError: ErrorType {
     /// File not found
-    case fileNotFound
+    case FileNotFound
     /// Unzip fail
-    case unzipFail
+    case UnzipFail
     /// Zip fail
-    case zipFail
+    case ZipFail
 
     /// User readable description
     internal var description: String {
         switch self {
-        case .fileNotFound: return NSLocalizedString("File not found.", comment: "")
-        case .unzipFail: return NSLocalizedString("Failed to unzip file.", comment: "")
-        case .zipFail: return NSLocalizedString("Failed to zip file.", comment: "")
+        case .FileNotFound: return NSLocalizedString("File not found.", comment: "")
+        case .UnzipFail: return NSLocalizedString("Failed to unzip file.", comment: "")
+        case .ZipFail: return NSLocalizedString("Failed to zip file.", comment: "")
         }
     }
 }
@@ -55,92 +55,93 @@ internal class Zip {
      - throws: Error if unzipping fails or if fail is not found. Can be printed with a description variable.
      */
 
-    internal class func unzipFile(_ zipFilePath: URL, destination: URL, overwrite: Bool, password: String?, progress: ((_ progress: Double) -> ())?) throws {
+    internal class func unzipFile(zipFilePath: NSURL, destination: NSURL, overwrite: Bool, password: String?, progress: ((progress: Double) -> ())?) throws {
         
         // File manager
-        let fileManager = FileManager.default
+        let fileManager = NSFileManager.defaultManager()
 
         // Check whether a zip file exists at path.
-        guard !zipFilePath.path.isEmpty, !destination.path.isEmpty else {
-            throw ZipError.fileNotFound
+        guard let path = zipFilePath.path, let destinationPath = destination.path else {
+            throw ZipError.FileNotFound
         }
-        if fileManager.fileExists(atPath: zipFilePath.path) == false || zipFilePath.pathExtension != "zip" {
-            throw ZipError.fileNotFound
+        if fileManager.fileExistsAtPath(path) == false || zipFilePath.pathExtension != "zip" {
+            throw ZipError.FileNotFound
         }
         
         // Unzip set up
         var ret: Int32 = 0
         var crc_ret: Int32 = 0
         let bufferSize: UInt32 = 4096
-        var buffer = Array<CUnsignedChar>(repeating: 0, count: Int(bufferSize))
+        var buffer = Array<CUnsignedChar>(count: Int(bufferSize), repeatedValue: 0)
         
         // Progress handler set up
         var totalSize: Double = 0.0
         var currentPosition: Double = 0.0
-        let fileAttributes = try fileManager.attributesOfItem(atPath: zipFilePath.path)
-        if let attributeFileSize = fileAttributes[FileAttributeKey.size] as? Double {
+        let fileAttributes = try fileManager.attributesOfItemAtPath(path)
+        if let attributeFileSize = fileAttributes[NSFileSize] as? Double {
             totalSize += attributeFileSize
         }
 
         // Begin unzipping
-        let zip = unzOpen64(zipFilePath.path)
+        let zip = unzOpen64(path)
         if unzGoToFirstFile(zip) != UNZ_OK {
-            throw ZipError.unzipFail
+            throw ZipError.UnzipFail
         }
         repeat {
-            if let cPassword = password?.cString(using: String.Encoding.ascii) {
+            if let cPassword = password?.cStringUsingEncoding(NSASCIIStringEncoding) {
                 ret = unzOpenCurrentFilePassword(zip, cPassword)
             }
             else {
                 ret = unzOpenCurrentFile(zip);
             }
             if ret != UNZ_OK {
-                throw ZipError.unzipFail
+                throw ZipError.UnzipFail
             }
             var fileInfo = unz_file_info64()
-            memset(&fileInfo, 0, MemoryLayout<unz_file_info>.size)
+            memset(&fileInfo, 0, sizeof(unz_file_info))
             ret = unzGetCurrentFileInfo64(zip, &fileInfo, nil, 0, nil, 0, nil, 0)
             if ret != UNZ_OK {
                 unzCloseCurrentFile(zip)
-                throw ZipError.unzipFail
+                throw ZipError.UnzipFail
             }
             currentPosition += Double(fileInfo.compressed_size)
             let fileNameSize = Int(fileInfo.size_filename) + 1
-            let fileName = UnsafeMutablePointer<CChar>.allocate(capacity: fileNameSize)
-
+            let fileName = UnsafeMutablePointer<CChar>.alloc(fileNameSize)
+            if fileName == nil {
+                throw ZipError.UnzipFail
+            }
             unzGetCurrentFileInfo64(zip, &fileInfo, fileName, UInt(fileNameSize), nil, 0, nil, 0)
             fileName[Int(fileInfo.size_filename)] = 0
-            guard var pathString = String(cString: fileName, encoding: String.Encoding.utf8) else {
-                throw ZipError.unzipFail
+            guard var pathString = String(CString: fileName, encoding: NSUTF8StringEncoding) else {
+                throw ZipError.UnzipFail
             }
             var isDirectory = false
             let fileInfoSizeFileName = Int(fileInfo.size_filename-1)
-            if (fileName[fileInfoSizeFileName] == "/".cString(using: String.Encoding.utf8)?.first || fileName[fileInfoSizeFileName] == "\\".cString(using: String.Encoding.utf8)?.first) {
+            if (fileName[fileInfoSizeFileName] == "/".cStringUsingEncoding(NSUTF8StringEncoding)?.first || fileName[fileInfoSizeFileName] == "\\".cStringUsingEncoding(NSUTF8StringEncoding)?.first) {
                 isDirectory = true;
             }
             free(fileName)
-            if pathString.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) != nil {
-                pathString = pathString.replacingOccurrences(of: "\\", with: "/")
+            if pathString.rangeOfCharacterFromSet(NSCharacterSet(charactersInString: "/\\")) != nil {
+                pathString = pathString.stringByReplacingOccurrencesOfString("\\", withString: "/")
             }
-            let fullPath = destination.appendingPathComponent(pathString).path
-            guard !fullPath.isEmpty else {
-                throw ZipError.unzipFail
+            guard let fullPath = destination.URLByAppendingPathComponent(pathString).path else {
+                throw ZipError.UnzipFail
             }
-            let creationDate = Date()
-            let directoryAttributes = [FileAttributeKey.creationDate.rawValue: creationDate, FileAttributeKey.modificationDate.rawValue: creationDate]
+            let creationDate = NSDate()
+            let directoryAttributes = [NSFileCreationDate: creationDate, NSFileModificationDate: creationDate]
             do {
                 if isDirectory {
-                    try fileManager.createDirectory(atPath: fullPath, withIntermediateDirectories: true, attributes: directoryAttributes)
+                    try fileManager.createDirectoryAtPath(fullPath, withIntermediateDirectories: true, attributes: directoryAttributes)
                 }
                 else {
-                    try fileManager.createDirectory(atPath: destination.path, withIntermediateDirectories: true, attributes: directoryAttributes)
+                    try fileManager.createDirectoryAtPath(destinationPath, withIntermediateDirectories: true, attributes: directoryAttributes)
                 }
             } catch {}
-            if fileManager.fileExists(atPath: fullPath) && !isDirectory && !overwrite {
+            if fileManager.fileExistsAtPath(fullPath) && !isDirectory && !overwrite {
                 unzCloseCurrentFile(zip)
                 ret = unzGoToNextFile(zip)
             }
-            var filePointer: UnsafeMutablePointer<FILE>?
+            var filePointer: UnsafeMutablePointer<FILE>
             filePointer = fopen(fullPath, "wb")
             while filePointer != nil {
                 let readBytes = unzReadCurrentFile(zip, &buffer, bufferSize)
@@ -154,20 +155,20 @@ internal class Zip {
             fclose(filePointer)
             crc_ret = unzCloseCurrentFile(zip)
             if crc_ret == UNZ_CRCERROR {
-                throw ZipError.unzipFail
+                throw ZipError.UnzipFail
             }
             ret = unzGoToNextFile(zip)
             
             // Update progress handler
             if let progressHandler = progress{
-                progressHandler((currentPosition/totalSize))
+                progressHandler(progress: (currentPosition/totalSize))
             }
             
         } while (ret == UNZ_OK && ret != UNZ_END_OF_LIST_OF_FILE)
         
         // Completed. Update progress handler.
         if let progressHandler = progress{
-            progressHandler(1.0)
+            progressHandler(progress: 1.0)
         }
 
     }
@@ -184,14 +185,14 @@ internal class Zip {
 
     - throws: Error if zipping fails.
     */
-    internal class func zipFiles(_ paths: [URL], zipFilePath: URL, password: String?, progress: ((_ progress: Double) -> ())?) throws {
+    internal class func zipFiles(paths: [NSURL], zipFilePath: NSURL, password: String?, progress: ((progress: Double) -> ())?) throws {
         
         // File manager
-        let fileManager = FileManager.default
+        let fileManager = NSFileManager.defaultManager()
         
         // Check whether a zip file exists at path.
-        guard !zipFilePath.path.isEmpty else {
-            throw ZipError.fileNotFound
+        guard let destinationPath = zipFilePath.path else {
+            throw ZipError.FileNotFound
         }
         
         // Process zip paths
@@ -207,8 +208,8 @@ internal class Zip {
         for path in processedPaths {
             do {
                 let filePath = path.filePath()
-                let fileAttributes = try fileManager.attributesOfItem(atPath: filePath)
-                let fileSize = fileAttributes[FileAttributeKey.size] as? Double
+                let fileAttributes = try fileManager.attributesOfItemAtPath(filePath)
+                let fileSize = fileAttributes[NSFileSize] as? Double
                 if let fileSize = fileSize {
                     totalSize += fileSize
                 }
@@ -217,32 +218,30 @@ internal class Zip {
         }
         
         // Begin Zipping
-        let zip = zipOpen(zipFilePath.path, APPEND_STATUS_CREATE)
+        let zip = zipOpen(destinationPath, APPEND_STATUS_CREATE)
         for path in processedPaths {
             let filePath = path.filePath()
             var isDirectory: ObjCBool = false
-            fileManager.fileExists(atPath: filePath, isDirectory: &isDirectory)
-            if !isDirectory.boolValue {
+            fileManager.fileExistsAtPath(filePath, isDirectory: &isDirectory)
+            if !isDirectory {
                 let input = fopen(filePath, "r")
                 if input == nil {
-                    throw ZipError.zipFail
+                    throw ZipError.ZipFail
                 }
                 let fileName = path.fileName
                 var zipInfo: zip_fileinfo = zip_fileinfo(tmz_date: tm_zip(tm_sec: 0, tm_min: 0, tm_hour: 0, tm_mday: 0, tm_mon: 0, tm_year: 0), dosDate: 0, internal_fa: 0, external_fa: 0)
                 do {
-                    let fileAttributes = try fileManager.attributesOfItem(atPath: filePath)
-                    if let fileDate = fileAttributes[FileAttributeKey.modificationDate] as? Date {
-                      //NSCalendar.current.dateComponents(Set<Calendar.Component>, from: Date)
-                      let componentsSet : Set<Calendar.Component> = [.year, .month, .day, .hour, .minute, .second]
-                      let components = NSCalendar.current.dateComponents(componentsSet, from: fileDate)
-                        zipInfo.tmz_date.tm_sec = UInt32(components.second!)
-                        zipInfo.tmz_date.tm_min = UInt32(components.minute!)
-                        zipInfo.tmz_date.tm_hour = UInt32(components.hour!)
-                        zipInfo.tmz_date.tm_mday = UInt32(components.day!)
-                        zipInfo.tmz_date.tm_mon = UInt32(components.month!) - 1
-                        zipInfo.tmz_date.tm_year = UInt32(components.year!)
+                    let fileAttributes = try fileManager.attributesOfItemAtPath(filePath)
+                    if let fileDate = fileAttributes[NSFileModificationDate] as? NSDate {
+                        let components = NSCalendar.currentCalendar().components([.Year, .Month, .Day, .Hour, .Minute, .Second], fromDate: fileDate)
+                        zipInfo.tmz_date.tm_sec = UInt32(components.second)
+                        zipInfo.tmz_date.tm_min = UInt32(components.minute)
+                        zipInfo.tmz_date.tm_hour = UInt32(components.hour)
+                        zipInfo.tmz_date.tm_mday = UInt32(components.day)
+                        zipInfo.tmz_date.tm_mon = UInt32(components.month) - 1
+                        zipInfo.tmz_date.tm_year = UInt32(components.year)
                     }
-                    if let fileSize = fileAttributes[FileAttributeKey.size] as? Double {
+                    if let fileSize = fileAttributes[NSFileSize] as? Double {
                         currentPosition += fileSize
                     }
                 }
@@ -255,7 +254,7 @@ internal class Zip {
                     zipOpenNewFileInZip3(zip, fileName, &zipInfo, nil, 0, nil, 0, nil,Z_DEFLATED, Z_DEFAULT_COMPRESSION, 0, -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, nil, 0)
                 }
                 else {
-                    throw ZipError.zipFail
+                    throw ZipError.ZipFail
                 }
                 var length: Int = 0
                 while (feof(input) == 0) {
@@ -265,7 +264,7 @@ internal class Zip {
                 
                 // Update progress handler
                 if let progressHandler = progress{
-                    progressHandler((currentPosition/totalSize))
+                    progressHandler(progress: (currentPosition/totalSize))
                 }
                 
                 zipCloseFileInZip(zip)
@@ -277,7 +276,7 @@ internal class Zip {
         
         // Completed. Update progress handler.
         if let progressHandler = progress{
-            progressHandler(1.0)
+            progressHandler(progress: 1.0)
         }
     }
     

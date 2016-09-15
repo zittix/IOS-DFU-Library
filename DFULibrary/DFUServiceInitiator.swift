@@ -49,7 +49,7 @@ import CoreBluetooth
      
      - returns: true (YES) if given peripheral is what service is looking for
      */
-    func select(_ peripheral:CBPeripheral, advertisementData: [String : Any], RSSI: NSNumber) -> Bool
+    func select(peripheral:CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) -> Bool
     
     /**
      Returns an optional list of services that the scanner will use to filter advertising packets
@@ -65,7 +65,7 @@ import CoreBluetooth
 
 /// The default selector. Returns the first device with DFU Service UUID in the advrtising packet.
 @objc internal class DefaultDFUPeripheralSelector : NSObject, DFUPeripheralSelector {
-    func select(_ peripheral: CBPeripheral, advertisementData: [String : Any], RSSI: NSNumber) -> Bool {
+    func select(peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) -> Bool {
         return true
     }
     
@@ -79,7 +79,7 @@ import CoreBluetooth
  with the Nordic Semiconductor's DFU (Device Firmware Update).
  A `delegate` and `logger` may be specified to be informed about the status.
  */
-@objc open class DFUServiceInitiator : NSObject {
+@objc public class DFUServiceInitiator : NSObject {
     internal let centralManager:CBCentralManager
     internal let target:CBPeripheral
     internal var file:DFUFirmware?
@@ -88,16 +88,16 @@ import CoreBluetooth
      The service delegate is an object that will be notified about state changes of the DFU Service.
      Setting it is optional but recommended.
      */
-    open weak var delegate:DFUServiceDelegate?
+    public weak var delegate:DFUServiceDelegate?
     /**
      An optional progress delegate will be called only during upload. It notifies about current upload
      percentage and speed.
      */
-    open weak var progressDelegate:DFUProgressDelegate?
+    public weak var progressDelegate:DFUProgressDelegate?
     /**
      The logger is an object that should print given messages to the user. It is optional.
      */
-    open weak var logger:LoggerDelegate?
+    public weak var logger:LoggerDelegate?
     /**
      The selector object is used during sending a firmware containing a Softdevice (or Softdevice and Bootloader)
      and the Application. After flashing the first part (containing the Softdevice), the device restarts in the
@@ -109,7 +109,7 @@ import CoreBluetooth
      
      Ignore this property if not updating Softdevice and Application from one ZIP file.
      */
-    open var peripheralSelector:DFUPeripheralSelector
+    public var peripheralSelector:DFUPeripheralSelector
     
     /**
      The number of packets of firmware data to be received by the DFU target before sending
@@ -118,7 +118,7 @@ import CoreBluetooth
      Default value is 12. Higher values, or disabling it, may speed up the upload process,
      but also cause a buffer overflow and hang the Bluetooth adapter.
      */
-    open var packetReceiptNotificationParameter:UInt16 = 12
+    public var packetReceiptNotificationParameter:UInt16 = 12
     
     /**
      Setting this property to true will prevent from jumping to the DFU Bootloader
@@ -165,7 +165,7 @@ import CoreBluetooth
      if the only service found is the DFU Service. Setting the forceDfu to true (YES) will prevent from
      jumping in these both cases.
      */
-    open var forceDfu = false
+    public var forceDfu = false
     
     /**
      Creates the DFUServiceInitializer that will allow to send an update to the given peripheral.
@@ -198,7 +198,7 @@ import CoreBluetooth
      
      - returns: the initiator instance to allow chain use
      */
-    open func withFirmwareFile(_ file:DFUFirmware) -> DFUServiceInitiator {
+    public func withFirmwareFile(file:DFUFirmware) -> DFUServiceInitiator {
         self.file = file
         return self
     }
@@ -216,10 +216,10 @@ import CoreBluetooth
      
      - returns: n object that can be used to controll the DFU operation.
      */
-    open func start() -> DFUServiceController? {
+    public func start() -> DFUServiceController? {
         // The firmware file must be specified before calling `start()`
         if file == nil {
-            delegate?.didErrorOccur(DFUError.fileNotSpecified, withMessage: "Firmware not specified")
+            delegate?.didErrorOccur(DFUError.FileNotSpecified, withMessage: "Firmware not specified")
             return nil
         }
         
