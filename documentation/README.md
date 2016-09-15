@@ -34,10 +34,11 @@ To include the library in your project do one of those options:
 
 1. Cocoapods (recommended):
 
-   Open up a terminal window, cd to your project's root and create a `Podfile` with the follwoing content:
+   Open up a terminal window, cd to your project's root and create a `Podfile` with the following content. Replace "YourAppTargetName" with the name of the main target in your app.
 
-   ```
-   use_frameworks!
+   ```ruby
+   target 'YourAppTargetName' do
+       use_frameworks!
        pod 'iOSDFULibrary'
    end
    ```
