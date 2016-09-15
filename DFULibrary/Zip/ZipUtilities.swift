@@ -37,7 +37,7 @@ internal class ZipUtilities {
     internal func processZipPaths(_ paths: [URL]) -> [ProcessedFilePath]{
         var processedFilePaths = [ProcessedFilePath]()
         for path in paths {
-            guard path.path != "" else {
+            guard !path.path.isEmpty else {
                 continue
             }
             var isDirectory: ObjCBool = false
@@ -64,11 +64,11 @@ internal class ZipUtilities {
      */
     internal func expandDirectoryFilePath(_ directory: URL) -> [ProcessedFilePath] {
         var processedFilePaths = [ProcessedFilePath]()
-      if directory.path != "" {
+      if !directory.path.isEmpty {
         if let enumerator = fileManager.enumerator(atPath: directory.path) {
             while let filePathComponent = enumerator.nextObject() as? String {
                 let path = directory.appendingPathComponent(filePathComponent)
-                guard path.path != "", directory.lastPathComponent != "" else {
+                guard !path.path.isEmpty, !directory.lastPathComponent.isEmpty else {
                     continue
                 }
                 var isDirectory: ObjCBool = false

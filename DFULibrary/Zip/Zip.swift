@@ -61,7 +61,7 @@ internal class Zip {
         let fileManager = FileManager.default
 
         // Check whether a zip file exists at path.
-        guard zipFilePath.path != "", destination.path != "" else {
+        guard !zipFilePath.path.isEmpty, !destination.path.isEmpty else {
             throw ZipError.fileNotFound
         }
         if fileManager.fileExists(atPath: zipFilePath.path) == false || zipFilePath.pathExtension != "zip" {
@@ -123,7 +123,7 @@ internal class Zip {
                 pathString = pathString.replacingOccurrences(of: "\\", with: "/")
             }
             let fullPath = destination.appendingPathComponent(pathString).path
-            guard fullPath != "" else {
+            guard !fullPath.isEmpty else {
                 throw ZipError.unzipFail
             }
             let creationDate = Date()
@@ -190,7 +190,7 @@ internal class Zip {
         let fileManager = FileManager.default
         
         // Check whether a zip file exists at path.
-        guard zipFilePath.path != "" else {
+        guard !zipFilePath.path.isEmpty else {
             throw ZipError.fileNotFound
         }
         

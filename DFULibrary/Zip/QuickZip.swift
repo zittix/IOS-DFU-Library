@@ -37,7 +37,7 @@ extension Zip {
      */
     internal class func quickUnzipFile(path: URL, progress: ((_ progress: Double) -> ())?) throws -> URL {
         let fileManager = FileManager.default
-        guard path.pathExtension != "", path.lastPathComponent != "" else {
+        guard !path.pathExtension.isEmpty, !path.lastPathComponent.isEmpty else {
             throw ZipError.unzipFail
         }
         let directoryName = path.lastPathComponent.replacingOccurrences(of: ".\(path.pathExtension)", with: "")
