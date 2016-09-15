@@ -20,20 +20,22 @@
 * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-extension Data {
+// Source: http://stackoverflow.com/a/35201226/2115352
+
+extension NSData {
+    
     internal var hexString: String {
-        let array = self.withUnsafeBytes {
-          Array(UnsafeBufferPointer<UInt8>(start: $0, count: self.count/MemoryLayout<UInt8>.size))
-        }
+        let pointer = UnsafePointer<UInt8>(bytes)
+        let array = getByteArray(pointer)
+        
         return array.reduce("") { (result, byte) -> String in
-            result + String(format: "%02x", byte)
+            result.stringByAppendingString(String(format: "%02x", byte))
         }
     }
-
-    internal mutating func append<T>(value: T)
-    {
-      var input = value
-      let buffer = UnsafeBufferPointer(start: &input, count: MemoryLayout.size(ofValue: T.self))
-      self.append(buffer)
+    
+    private func getByteArray(pointer: UnsafePointer<UInt8>) -> [UInt8] {
+        let buffer = UnsafeBufferPointer<UInt8>(start: pointer, count: length)
+        
+        return [UInt8](buffer)
     }
 }

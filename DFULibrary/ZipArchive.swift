@@ -24,7 +24,7 @@
 
 internal class ZipArchive {
     
-    fileprivate init() {
+    private init() {
         // Forbid creating instance of this class
         // Use this class only in static way
     }
@@ -39,21 +39,21 @@ internal class ZipArchive {
      
      - returns: list of URLs to unzipped files in the tmp folder
      */
-    internal static func unzip(_ url:URL) throws -> [URL] {
+    internal static func unzip(url:NSURL) throws -> [NSURL] {
         let fileName = url.lastPathComponent
-        let destinationPath = try createTemporaryFolderPath(fileName)
+        let destinationPath = try createTemporaryFolderPath(fileName!)
         
         // Unzip file to the destination folder
-        let destination = URL.init(fileURLWithPath: destinationPath)
+        let destination = NSURL.init(fileURLWithPath: destinationPath)
         try Zip.unzipFile(url, destination: destination, overwrite: true, password: nil, progress: nil)
         
         // Get folder content
         let files = try getFilesFromDirectory(destinationPath)
         
         // Convert Strings to NSURLs
-        var urls = [URL]()
+        var urls = [NSURL]()
         for file in files {
-            urls.append(URL(fileURLWithPath: destinationPath + file))
+            urls.append(NSURL.fileURLWithPath(destinationPath + file))
         }
         return urls
     }
@@ -65,15 +65,15 @@ internal class ZipArchive {
      
      - returns: a path to the tmp folder
      */
-    internal static func createTemporaryFolderPath(_ name:String) throws -> String {
+    internal static func createTemporaryFolderPath(name:String) throws -> String {
         // Build the temp folder path. Content of the ZIP file will be copied into it
         let tempPath = NSTemporaryDirectory() + ".dfu/unzip/" + name + "/"
         
         // Check if folder exists. Remove it if so
-        let fileManager = FileManager.default
-        if fileManager.fileExists(atPath: tempPath) {
+        let fileManager = NSFileManager.defaultManager()
+        if fileManager.fileExistsAtPath(tempPath) {
             do {
-                try fileManager.removeItem(atPath: tempPath)
+                try fileManager.removeItemAtPath(tempPath)
             } catch let error as NSError {
                 NSLog("Error while removing old temp file: \(error.localizedDescription)")
                 throw error
@@ -82,7 +82,7 @@ internal class ZipArchive {
         
         // Create a new temporary folder
         do {
-            try fileManager.createDirectory(atPath: tempPath, withIntermediateDirectories: true, attributes: nil)
+            try fileManager.createDirectoryAtPath(tempPath, withIntermediateDirectories: true, attributes: nil)
         } catch let error as NSError {
             NSLog("Error while creating temp file: \(error.localizedDescription)")
             throw error
@@ -100,11 +100,11 @@ internal class ZipArchive {
      
      - returns: list of paths to files from the directory at given path
      */
-    internal static func getFilesFromDirectory(_ path:String) throws -> [String] {
-        let fileManager = FileManager.default
+    internal static func getFilesFromDirectory(path:String) throws -> [String] {
+        let fileManager = NSFileManager.defaultManager()
         
         do {
-            return try fileManager.contentsOfDirectory(atPath: path)
+            return try fileManager.contentsOfDirectoryAtPath(path)
         } catch let error as NSError {
             NSLog("Error while obtaining content of temp folder: \(error.localizedDescription)")
             throw error
@@ -119,7 +119,7 @@ internal class ZipArchive {
      
      - returns: URL to a file or nil
      */
-    internal static func findFile(_ name:String, inside urls:[URL]) -> URL? {
+    internal static func findFile(name:String, inside urls:[NSURL]) -> NSURL? {
         for url in urls {
             if url.lastPathComponent == name {
                 return url

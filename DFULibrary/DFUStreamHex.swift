@@ -23,16 +23,16 @@
 import HexToBinConverter
 
 internal class DFUStreamHex : DFUStream {
-    fileprivate(set) var currentPart = 1
-    fileprivate(set) var parts = 1
-    fileprivate(set) var currentPartType:UInt8 = 0
+    private(set) var currentPart = 1
+    private(set) var parts = 1
+    private(set) var currentPartType:UInt8 = 0
     
     /// Firmware binaries
-    fileprivate var binaries:Data
+    private var binaries:NSData
     /// The init packet content
-    fileprivate var initPacketBinaries:Data?
+    private var initPacketBinaries:NSData?
     
-    fileprivate var firmwareSize:UInt32 = 0
+    private var firmwareSize:UInt32 = 0
     
     var size:DFUFirmwareSize {
         switch currentPartType {
@@ -50,23 +50,23 @@ internal class DFUStreamHex : DFUStream {
         return size
     }
     
-    init(urlToHexFile:URL, urlToDatFile:URL?, type:DFUFirmwareType) {
-        let hexData = try? Data.init(contentsOf: urlToHexFile)
+    init(urlToHexFile:NSURL, urlToDatFile:NSURL?, type:DFUFirmwareType) {
+        let hexData = NSData.init(contentsOfURL: urlToHexFile)
         binaries = IntelHex2BinConverter.convert(hexData)
-        firmwareSize = UInt32(binaries.count)
+        firmwareSize = UInt32(binaries.length)
         
         if let dat = urlToDatFile {
-            initPacketBinaries = try? Data.init(contentsOf: dat)
+            initPacketBinaries = NSData.init(contentsOfURL: dat)
         }
         
         self.currentPartType = type.rawValue
     }
     
-    var data:Data {
+    var data:NSData {
         return binaries
     }
     
-    var initPacket:Data? {
+    var initPacket:NSData? {
         return initPacketBinaries
     }
     

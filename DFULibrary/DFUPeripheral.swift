@@ -24,31 +24,31 @@ import CoreBluetooth
 
 @objc internal class DFUPeripheral: NSObject, CBPeripheralDelegate, CBCentralManagerDelegate {
     /// Bluetooth Central Manager used to scan for the peripheral.
-    fileprivate let centralManager:CBCentralManager
+    private let centralManager:CBCentralManager
     /// The DFU Target peripheral.
-    fileprivate var peripheral:CBPeripheral?
+    private var peripheral:CBPeripheral?
     
     /// The optional logger delegate.
-    fileprivate var logger:LoggerHelper
+    private var logger:LoggerHelper
     /// The peripheral delegate.
     internal var delegate:DFUPeripheralDelegate?
     /// Selector used to find the advertising peripheral in DFU Bootloader mode.
-    fileprivate var peripheralSelector:DFUPeripheralSelector?
+    private var peripheralSelector:DFUPeripheralSelector?
 
     // MARK: - DFU properties
     
     /// The DFU Service instance. Not nil when found on the peripheral.
-    fileprivate var dfuService:DFUService?
+    private var dfuService:DFUService?
     /// A flag set when a command to jump to DFU Bootloader has been sent.
-    fileprivate var jumpingToBootloader = false
+    private var jumpingToBootloader = false
     /// A flag set when a command to activate the new firmware and reset the device has been sent.
-    fileprivate var activating = false
+    private var activating = false
     /// A flag set when upload has been paused.
-    fileprivate var paused = false
+    private var paused = false
     /// A flag set when upload has been aborted.
-    fileprivate var aborted = false
+    private var aborted = false
     /// A flag set when device is resetting
-    fileprivate var resetting = false
+    private var resetting = false
     
     // MARK: - Initialization
     
@@ -72,7 +72,7 @@ import CoreBluetooth
         let name = peripheral!.name ?? "Unknown device"
         logger.v("Connecting to \(name)...")
         logger.d("centralManager.connectPeripheral(peripheral, options:nil)")
-        centralManager.connect(peripheral!, options: nil)
+        centralManager.connectPeripheral(peripheral!, options: nil)
     }
     
     /**
@@ -149,7 +149,7 @@ import CoreBluetooth
      
      - returns: true if device needs buttonless jump to DFU Bootloader mode
      */
-    func isInApplicationMode(_ forceDfu:Bool) -> Bool {
+    func isInApplicationMode(forceDfu:Bool) -> Bool {
         let applicationMode = dfuService!.isInApplicationMode() ?? !forceDfu
         
         if applicationMode {
@@ -181,11 +181,11 @@ import CoreBluetooth
      - parameter type: the firmware type bitfield. See FIRMWARE_TYPE_* constants
      - parameter size: the size of all parts of the firmware
      */
-    func sendStartDfuWithFirmwareType(_ type:UInt8, andSize size:DFUFirmwareSize) {
+    func sendStartDfuWithFirmwareType(type:UInt8, andSize size:DFUFirmwareSize) {
         dfuService!.sendDfuStartWithFirmwareType(type, andSize: size,
             onSuccess: { self.delegate?.onStartDfuSent() },
             onError: { error, message in
-                if error == DFUError.remoteNotSupported {
+                if error == DFUError.RemoteNotSupported {
                     self.logger.w("DFU target does not support DFU v.2")
                     self.delegate?.onStartDfuWithTypeNotSupported()
                 } else {
@@ -202,7 +202,7 @@ import CoreBluetooth
      
      - parameter size: the size of all parts of the firmware, where size of softdevice and bootloader are 0
      */
-    func sendStartDfuWithFirmwareSize(_ size:DFUFirmwareSize) {
+    func sendStartDfuWithFirmwareSize(size:DFUFirmwareSize) {
         logger.v("Switching to DFU v.1")
         dfuService!.sendStartDfuWithFirmwareSize(size,
             onSuccess: { self.delegate?.onStartDfuSent() },
@@ -216,7 +216,7 @@ import CoreBluetooth
      
      - parameter data: Init Packet data
      */
-    func sendInitPacket(_ data:Data) {
+    func sendInitPacket(data:NSData) {
         dfuService!.sendInitPacket(data,
             onSuccess: { self.delegate?.onInitPacketSent() },
             onError: { error, message in self.delegate?.didErrorOccur(error, withMessage: message) }
@@ -233,7 +233,7 @@ import CoreBluetooth
      before sending a new Packet Receipt Notification. Set 0 to disable PRNs (not recommended)
      - parameter progressDelegate: the deleagate that will be informed about progress changes
      */
-    func sendFirmware(_ firmware:DFUFirmware, withPacketReceiptNotificationNumber number:UInt16, andReportProgressTo progressDelegate:DFUProgressDelegate?) {
+    func sendFirmware(firmware:DFUFirmware, withPacketReceiptNotificationNumber number:UInt16, andReportProgressTo progressDelegate:DFUProgressDelegate?) {
         dfuService!.sendPacketReceiptNotificationRequest(number,
             onSuccess: {
                 // Now the service is ready to send the firmware
@@ -285,7 +285,7 @@ import CoreBluetooth
      
      - parameter selector: a selector used to select a device in DFU Bootloader mode
      */
-    func switchToNewPeripheralAndConnect(_ selector:DFUPeripheralSelector) {
+    func switchToNewPeripheralAndConnect(selector:DFUPeripheralSelector) {
         // Release the previous peripheral
         self.peripheral!.delegate = nil
         self.peripheral = nil
@@ -293,7 +293,7 @@ import CoreBluetooth
         
         self.peripheralSelector = selector
         logger.v("Scanning for the DFU Bootloader...")
-        centralManager.scanForPeripherals(withServices: selector.filterBy(), options: nil)
+        centralManager.scanForPeripheralsWithServices(selector.filterBy(), options: nil)
     }
     
     /**
@@ -308,15 +308,11 @@ import CoreBluetooth
     
     // MARK: - Central Manager methods
     
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-      if #available(iOS 10.0, *) {
+    func centralManagerDidUpdateState(central: CBCentralManager) {
         logCentralManagerState(central.state)
-      } else {
-        logCentralManagerState(CBCentralManagerState(rawValue: central.state.rawValue)!)
-      }
     }
     
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+    func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
         cleanUp()
         
         logger.d("[Callback] Central Manager did connect peripheral")
@@ -331,7 +327,7 @@ import CoreBluetooth
         peripheral.discoverServices(nil)
     }
     
-    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+    func centralManager(central: CBCentralManager, didFailToConnectPeripheral peripheral: CBPeripheral, error: NSError?) {
         cleanUp()
         
         if let error = error {
@@ -344,15 +340,14 @@ import CoreBluetooth
         delegate?.didDeviceFailToConnect()
     }
     
-    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+    func centralManager(central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: NSError?) {
         // When device got disconnected due to a buttonless jump or a firmware activation, it is handled differently
         if jumpingToBootloader || activating || aborted || resetting {
             // This time we expect an error with code = 7: "The specified device has disconnected from us." (graceful disconnect)
             // or code = 6: "The connection has timed out unexpectedly." (in case it disconnected before sending the ACK).
             if error != nil {
-              let nserror = error as! NSError
                 logger.d("[Callback] Central Manager did disconnect peripheral")
-                if nserror.code == 7 || nserror.code == 6 {
+                if error!.code == 7 || error!.code == 6 {
                     logger.i("Disconnected by the remote device")
                     if resetting {
                         //We need to reconnect
@@ -388,7 +383,7 @@ import CoreBluetooth
             logger.d("[Callback] Central Manager did disconnect peripheral")
             logger.i("Disconnected")
             logger.e(error)
-            delegate?.didDeviceDisconnectWithError(error as NSError)
+            delegate?.didDeviceDisconnectWithError(error)
         } else {
             logger.d("[Callback] Central Manager did disconnect peripheral without error")
             logger.i("Disconnected")
@@ -396,7 +391,7 @@ import CoreBluetooth
         }
     }
     
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+    func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
         if let peripheralSelector = peripheralSelector {
             // Is this a device we are looking for?
             if peripheralSelector.select(peripheral, advertisementData: advertisementData, RSSI: RSSI) {
@@ -422,11 +417,11 @@ import CoreBluetooth
     
     // MARK: - Peripheral Delegate methods
     
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+    func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
         if error != nil {
             logger.e("Services discovery failed")
             logger.e(error!)
-            delegate?.didErrorOccur(DFUError.serviceDiscoveryFailed, withMessage: "Services discovery failed")
+            delegate?.didErrorOccur(DFUError.ServiceDiscoveryFailed, withMessage: "Services discovery failed")
         } else {
             logger.i("Services discovered")
             
@@ -449,78 +444,45 @@ import CoreBluetooth
             if dfuService == nil {
                 logger.e("DFU Service not found")
                 // The device does not support DFU, nor buttonless jump
-                delegate?.didErrorOccur(DFUError.deviceNotSupported, withMessage: "DFU Service not found")
+                delegate?.didErrorOccur(DFUError.DeviceNotSupported, withMessage: "DFU Service not found")
             }
         }
     }
     
     // MARK: - Private methods
     
-    fileprivate func cleanUp() {
+    private func cleanUp() {
         dfuService = nil
     }
     
-  @available(iOS 10.0, *)
-  fileprivate func logCentralManagerState(_ state:CBManagerState) {
+    private func logCentralManagerState(state:CBCentralManagerState) {
         var stateAsString:String
         
         switch (state) {
-        case .poweredOn:
+        case .PoweredOn:
             stateAsString = "Powered ON"
             break
             
-        case .poweredOff:
+        case .PoweredOff:
             stateAsString = "Powered OFF"
             break
             
-        case .resetting:
+        case .Resetting:
             stateAsString = "Resetting"
             break
             
-        case .unauthorized:
+        case .Unauthorized:
             stateAsString = "Unauthorized"
             break
             
-        case .unsupported:
+        case .Unsupported:
             stateAsString = "Unsupported"
             break
             
-        case .unknown:
+        case .Unknown:
             stateAsString = "Unknown"
             break
         }
         logger.d("[Callback] Central Manager did update state to: \(stateAsString)")
     }
-
-  @available(iOS 8.0, *)
-  fileprivate func logCentralManagerState(_ state:CBCentralManagerState) {
-    var stateAsString:String
-
-    switch (state) {
-    case .poweredOn:
-      stateAsString = "Powered ON"
-      break
-
-    case .poweredOff:
-      stateAsString = "Powered OFF"
-      break
-
-    case .resetting:
-      stateAsString = "Resetting"
-      break
-
-    case .unauthorized:
-      stateAsString = "Unauthorized"
-      break
-
-    case .unsupported:
-      stateAsString = "Unsupported"
-      break
-
-    case .unknown:
-      stateAsString = "Unknown"
-      break
-    }
-    logger.d("[Callback] Central Manager did update state to: \(stateAsString)")
-  }
 }

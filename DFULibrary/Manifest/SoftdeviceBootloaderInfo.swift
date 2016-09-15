@@ -13,10 +13,10 @@ class SoftdeviceBootloaderInfo: ManifestFirmwareInfo {
     override init(withDictionary aDictionary : Dictionary<String, AnyObject>) {
         super.init(withDictionary: aDictionary)
         if aDictionary.keys.contains("bl_size") {
-            blSize = (aDictionary["bl_size"]!).uint32Value
+            blSize = (aDictionary["bl_size"]!).unsignedIntValue
         }
         if aDictionary.keys.contains("sd_size") {
-            sdSize = (aDictionary["sd_size"]!).uint32Value
+            sdSize = (aDictionary["sd_size"]!).unsignedIntValue
         }
     }
 }

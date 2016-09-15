@@ -22,23 +22,23 @@
 
 import CoreBluetooth
 
-internal typealias VersionCallback = (_ major:Int, _ minor:Int) -> Void
+internal typealias VersionCallback = (major:Int, minor:Int) -> Void
 
 @objc internal class DFUVersion : NSObject, CBPeripheralDelegate {
     static let UUID = CBUUID(string: "00001534-1212-EFDE-1523-785FEABCD123")
     
-    static func matches(_ characteristic:CBCharacteristic) -> Bool {
-        return characteristic.uuid.isEqual(UUID)
+    static func matches(characteristic:CBCharacteristic) -> Bool {
+        return characteristic.UUID.isEqual(UUID)
     }
     
-    fileprivate var characteristic:CBCharacteristic
-    fileprivate var logger:LoggerHelper
+    private var characteristic:CBCharacteristic
+    private var logger:LoggerHelper
     
-    fileprivate var success:VersionCallback?
-    fileprivate var report:ErrorCallback?
+    private var success:VersionCallback?
+    private var report:ErrorCallback?
     
     var valid:Bool {
-        return characteristic.properties.contains(CBCharacteristicProperties.read)
+        return characteristic.properties.contains(CBCharacteristicProperties.Read)
     }
     
     // MARK: - Initialization
@@ -69,36 +69,36 @@ internal typealias VersionCallback = (_ major:Int, _ minor:Int) -> Void
         peripheral.delegate = self
         
         logger.v("Reading DFU Version number...")
-        logger.d("peripheral.readValueForCharacteristic(\(DFUVersion.UUID.uuidString))")
-        peripheral.readValue(for: characteristic)
+        logger.d("peripheral.readValueForCharacteristic(\(DFUVersion.UUID.UUIDString))")
+        peripheral.readValueForCharacteristic(characteristic)
     }
     
     // MARK: - Peripheral Delegate callbacks
     
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+    func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
         if error != nil {
             logger.e("Reading DFU Version characteristic failed")
             logger.e(error!)
-            report?(DFUError.readingVersionFailed, "Reading DFU Version characteristic failed")
+            report?(error:DFUError.ReadingVersionFailed, withMessage:"Reading DFU Version characteristic failed")
         } else {
             let data = characteristic.value
-            logger.i("Read Response received from \(DFUVersion.UUID.uuidString), \("value (0x):" + (data?.hexString ?? "no value"))")
+            logger.i("Read Response received from \(DFUVersion.UUID.UUIDString), \("value (0x):" + (data?.hexString ?? "no value"))")
             
             // Validate data length
-            if data == nil || data!.count != 2 {
+            if data == nil || data!.length != 2 {
                 logger.w("Invalid value: 2 bytes expected")
-                report?(DFUError.readingVersionFailed, "Unsupported DFU Version value: \(data != nil ? "0x" + data!.hexString : "nil"))")
+                report?(error:DFUError.ReadingVersionFailed, withMessage:"Unsupported DFU Version value: \(data != nil ? "0x" + data!.hexString : "nil"))")
                 return
             }
             
             // Read major and minor
             var minor:Int = 0
             var major:Int = 0
-            (data as NSData?)?.getBytes(&minor, range: NSRange(location: 0, length: 1))
-            (data as NSData?)?.getBytes(&major, range: NSRange(location: 1, length: 1))
+            data?.getBytes(&minor, range: NSRange(location: 0, length: 1))
+            data?.getBytes(&major, range: NSRange(location: 1, length: 1))
             
             logger.a("Version number read: \(major).\(minor)")
-            success?(major, minor)
+            success?(major: major, minor: minor)
         }
     }
 }
