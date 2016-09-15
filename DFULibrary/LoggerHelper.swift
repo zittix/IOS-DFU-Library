@@ -21,41 +21,52 @@
 */
 
 internal class LoggerHelper {
-    private var initiator:DFUServiceInitiator
+    fileprivate var initiator:DFUServiceInitiator
     
     init(_ initiator:DFUServiceInitiator) {
         self.initiator = initiator
     }
     
-    func d(message:String) {
-        self.initiator.logger?.logWith(.Debug, message: message)
+    func d(_ message:String) {
+        self.initiator.logger?.logWith(.debug, message: message)
     }
     
-    func v(message:String) {
-        self.initiator.logger?.logWith(.Verbose, message: message)
+    func v(_ message:String) {
+        self.initiator.logger?.logWith(.verbose, message: message)
     }
     
-    func i(message:String) {
-        self.initiator.logger?.logWith(.Info, message: message)
+    func i(_ message:String) {
+        self.initiator.logger?.logWith(.info, message: message)
     }
     
-    func a(message:String) {
-        self.initiator.logger?.logWith(.Application, message: message)
+    func a(_ message:String) {
+        self.initiator.logger?.logWith(.application, message: message)
     }
     
-    func w(message:String) {
-        self.initiator.logger?.logWith(.Warning, message: message)
+    func w(_ message:String) {
+        self.initiator.logger?.logWith(.warning, message: message)
     }
     
-    func w(error:NSError) {
-        self.initiator.logger?.logWith(.Warning, message: "Error \(error.code): \(error.localizedDescription)");
+    func w(_ error:NSError) {
+        self.initiator.logger?.logWith(.warning, message: "Error \(error.code): \(error.localizedDescription)");
+    }
+
+    func w(_ error:Error) {
+      let nserror = error as NSError
+      self.initiator.logger?.logWith(.warning, message: "Error \(nserror.code): \(nserror.localizedDescription)");
+    }
+
+    func e(_ message:String) {
+        self.initiator.logger?.logWith(.error, message: message)
     }
     
-    func e(message:String) {
-        self.initiator.logger?.logWith(.Error, message: message)
+    func e(_ error:NSError) {
+        self.initiator.logger?.logWith(.error, message: "Error \(error.code): \(error.localizedDescription)");
     }
-    
-    func e(error:NSError) {
-        self.initiator.logger?.logWith(.Error, message: "Error \(error.code): \(error.localizedDescription)");
+
+    func e(_ error:Error) {
+      let nserror = error as NSError
+      self.initiator.logger?.logWith(.error, message: "Error \(nserror.code): \(nserror.localizedDescription)");
     }
+
 }

@@ -22,29 +22,29 @@
 
 internal class DFUExecutor : DFUPeripheralDelegate {
     /// The DFU Service Initiator instance that was used to start the service.
-    private let initiator:DFUServiceInitiator
+    fileprivate let initiator:DFUServiceInitiator
     
     /// Retry counter for peripheral invalid state issue
-    private var invalidStateRetryCount = 3
+    fileprivate var invalidStateRetryCount = 3
 
     /// The service delegate will be informed about status changes and errors.
-    private var delegate:DFUServiceDelegate? {
+    fileprivate var delegate:DFUServiceDelegate? {
         // The delegate may change during DFU operation (setting a new one in the initiator). Let's allways use the current one.
         return initiator.delegate
     }
     
     /// The progress delegate will be informed about current upload progress.
-    private var progressDelegate:DFUProgressDelegate? {
+    fileprivate var progressDelegate:DFUProgressDelegate? {
         // The delegate may change during DFU operation (setting a new one in the initiator). Let's allways use the current one.
         return initiator.progressDelegate
     }
     
     /// The DFU Target peripheral. The peripheral keeps the cyclic reference to the DFUExecutor preventing both from being disposed before DFU ends.
-    private var peripheral:DFUPeripheral
+    fileprivate var peripheral:DFUPeripheral
     /// The firmware to be sent over-the-air
-    private var firmware:DFUFirmware
+    fileprivate var firmware:DFUFirmware
     
-    private var error:(error:DFUError, message:String)?
+    fileprivate var error:(error:DFUError, message:String)?
     
     // MARK: - Initialization
     
@@ -58,8 +58,8 @@ internal class DFUExecutor : DFUPeripheralDelegate {
     
     func start() {
         self.error = nil
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didStateChangedTo(State.Connecting)
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didStateChangedTo(State.connecting)
         })
         peripheral.delegate = self
         peripheral.connect()
@@ -81,11 +81,11 @@ internal class DFUExecutor : DFUPeripheralDelegate {
     
     func onDeviceReady() {
         if firmware.initPacket == nil && peripheral.isInitPacketRequired() {
-            didErrorOccur(DFUError.ExtendedInitPacketRequired, withMessage: "The init packet is required by the target device")
+            didErrorOccur(DFUError.extendedInitPacketRequired, withMessage: "The init packet is required by the target device")
             return
         }
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didStateChangedTo(State.Starting)
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didStateChangedTo(State.starting)
         })
         peripheral.enableControlPoint()
     }
@@ -93,8 +93,8 @@ internal class DFUExecutor : DFUPeripheralDelegate {
     func onControlPointEnabled() {
         // Check whether the target is in application or bootloader mode
         if peripheral.isInApplicationMode(initiator.forceDfu) {
-            dispatch_async(dispatch_get_main_queue(), {
-                self.delegate?.didStateChangedTo(State.EnablingDfuMode)
+            DispatchQueue.main.async(execute: {
+                self.delegate?.didStateChangedTo(State.enablingDfuMode)
             })
             peripheral.jumpToBootloader()
         } else {
@@ -112,17 +112,17 @@ internal class DFUExecutor : DFUPeripheralDelegate {
             peripheral.sendStartDfuWithFirmwareSize(firmware.currentPartSize)
         } else {
             // Operation can not be continued
-            didErrorOccur(DFUError.RemoteNotSupported, withMessage: "Updating Softdevice or Bootloader is not supported")
+            didErrorOccur(DFUError.remoteNotSupported, withMessage: "Updating Softdevice or Bootloader is not supported")
         }
     }
 
     func onDeviceReportedInvalidState() {
         if invalidStateRetryCount > 0 {
-            self.initiator.logger?.logWith(.Warning, message: "Last upload interrupted. Restarting device, attempts left : \(invalidStateRetryCount)")
+            self.initiator.logger?.logWith(.warning, message: "Last upload interrupted. Restarting device, attempts left : \(invalidStateRetryCount)")
             invalidStateRetryCount -= 1
             self.peripheral.connect()
         }else{
-            self.didErrorOccur(.RemoteInvalidState, withMessage: "Peripheral is in an invalid state, please try to reset and start over again.")
+            self.didErrorOccur(.remoteInvalidState, withMessage: "Peripheral is in an invalid state, please try to reset and start over again.")
         }
     }
 
@@ -144,8 +144,8 @@ internal class DFUExecutor : DFUPeripheralDelegate {
      Sends the current part of the firmware to the target DFU device.
      */
     func sendFirmware() {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didStateChangedTo(State.Uploading)
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didStateChangedTo(State.uploading)
         })
         // First the service will send the number of packets of firmware data to be received 
         // by the DFU target before sending a new Packet Receipt Notification.
@@ -154,15 +154,15 @@ internal class DFUExecutor : DFUPeripheralDelegate {
     }
     
     func onFirmwareSent() {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didStateChangedTo(State.Validating)
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didStateChangedTo(State.validating)
         })
         peripheral.validateFirmware()
     }
     
     func onFirmwareVerified() {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didStateChangedTo(State.Disconnecting)
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didStateChangedTo(State.disconnecting)
         })
         peripheral.activateAndReset()
     }
@@ -180,16 +180,16 @@ internal class DFUExecutor : DFUPeripheralDelegate {
     }
     
     func onAborted() {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didStateChangedTo(State.Aborted)
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didStateChangedTo(State.aborted)
         })
         // Release the cyclic reference
         peripheral.destroy()
     }
     
     func didDeviceFailToConnect() {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didErrorOccur(DFUError.FailedToConnect, withMessage: "Device failed to connect")
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didErrorOccur(DFUError.failedToConnect, withMessage: "Device failed to connect")
         })
         // Release the cyclic reference
         peripheral.destroy()
@@ -197,27 +197,27 @@ internal class DFUExecutor : DFUPeripheralDelegate {
     
     func didDeviceDisconnect() {
         // The device is now disconnected. Check if there was an error that needs to be reported now
-        dispatch_async(dispatch_get_main_queue(), {
+        DispatchQueue.main.async(execute: {
             if let error = self.error {
                 self.delegate?.didErrorOccur(error.error, withMessage: error.message)
             } else {
                 // If no, the DFU operation is complete
-                self.delegate?.didStateChangedTo(State.Completed)
+                self.delegate?.didStateChangedTo(State.completed)
             }
         })
         // Release the cyclic reference
         peripheral.destroy()
     }
     
-    func didDeviceDisconnectWithError(error: NSError) {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.delegate?.didErrorOccur(DFUError.DeviceDisconnected, withMessage: "\(error.localizedDescription) (code: \(error.code))")
+    func didDeviceDisconnectWithError(_ error: NSError) {
+        DispatchQueue.main.async(execute: {
+            self.delegate?.didErrorOccur(DFUError.deviceDisconnected, withMessage: "\(error.localizedDescription) (code: \(error.code))")
         })
         // Release the cyclic reference
         peripheral.destroy()
     }
     
-    func didErrorOccur(error:DFUError, withMessage message:String) {
+    func didErrorOccur(_ error:DFUError, withMessage message:String) {
         // Save the error. It will be reported when the device disconnects
         self.error = (error, message)
         peripheral.disconnect()
