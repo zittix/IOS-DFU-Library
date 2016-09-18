@@ -7,8 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4EEFA4991CDCE91400ABDD50 /* Zip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EEFA4981CDCE91400ABDD50 /* Zip.framework */; };
-		4EEFA49B1CDCE96400ABDD50 /* EVReflection.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EEFA49A1CDCE96400ABDD50 /* EVReflection.framework */; };
+		3082D7CE1D5CB95C004DBD2A /* Manifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3082D7CB1D5CB95C004DBD2A /* Manifest.swift */; };
+		3082D7CF1D5CB95C004DBD2A /* ManifestFirmwareInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3082D7CC1D5CB95C004DBD2A /* ManifestFirmwareInfo.swift */; };
+		3082D7D01D5CB95C004DBD2A /* SoftdeviceBootloaderInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3082D7CD1D5CB95C004DBD2A /* SoftdeviceBootloaderInfo.swift */; };
+		4E6AE8471D8EF5EA00845528 /* Zip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E6AE8461D8EF5EA00845528 /* Zip.framework */; };
+		4E6AE8481D8F04A400845528 /* Zip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E6AE8461D8EF5EA00845528 /* Zip.framework */; };
+		4E6AE84B1D8F04E400845528 /* Zip.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4E6AE84A1D8F04E400845528 /* Zip.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5226B1871C8841380011D523 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5226B1861C8841380011D523 /* Double.swift */; };
 		522B81A51C77732F0022B8EB /* LoggerHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522B81A41C77732F0022B8EB /* LoggerHelper.swift */; };
 		522B81A81C7B2D390022B8EB /* NSData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522B81A71C7B2D390022B8EB /* NSData.swift */; };
@@ -47,9 +51,25 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		4E6AE8491D8F04BF00845528 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4E6AE84B1D8F04E400845528 /* Zip.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		4EEFA4981CDCE91400ABDD50 /* Zip.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Zip.framework; path = Carthage/Build/iOS/Zip.framework; sourceTree = SOURCE_ROOT; };
-		4EEFA49A1CDCE96400ABDD50 /* EVReflection.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EVReflection.framework; path = Carthage/Build/iOS/EVReflection.framework; sourceTree = SOURCE_ROOT; };
+		3082D7CB1D5CB95C004DBD2A /* Manifest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Manifest.swift; sourceTree = "<group>"; };
+		3082D7CC1D5CB95C004DBD2A /* ManifestFirmwareInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManifestFirmwareInfo.swift; sourceTree = "<group>"; };
+		3082D7CD1D5CB95C004DBD2A /* SoftdeviceBootloaderInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoftdeviceBootloaderInfo.swift; sourceTree = "<group>"; };
+		4E6AE8461D8EF5EA00845528 /* Zip.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Zip.framework; path = Carthage/Build/iOS/Zip.framework; sourceTree = SOURCE_ROOT; };
+		4E6AE84A1D8F04E400845528 /* Zip.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Zip.framework; path = Carthage/Build/iOS/Zip.framework; sourceTree = "<group>"; };
 		5226B1861C8841380011D523 /* Double.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Double.swift; sourceTree = "<group>"; };
 		522B81A41C77732F0022B8EB /* LoggerHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoggerHelper.swift; sourceTree = "<group>"; };
 		522B81A71C7B2D390022B8EB /* NSData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NSData.swift; sourceTree = "<group>"; };
@@ -86,8 +106,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4EEFA49B1CDCE96400ABDD50 /* EVReflection.framework in Frameworks */,
-				4EEFA4991CDCE91400ABDD50 /* Zip.framework in Frameworks */,
+				4E6AE8471D8EF5EA00845528 /* Zip.framework in Frameworks */,
 				52C12BA41C6CAC2F004D9DB8 /* libz.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,6 +115,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E6AE8481D8F04A400845528 /* Zip.framework in Frameworks */,
 				52C12B691C6B8B28004D9DB8 /* DFULibrary.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -103,6 +123,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3082D7C91D5CB94F004DBD2A /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				3082D7CA1D5CB95C004DBD2A /* Manifest */,
+			);
+			name = Utilities;
+			sourceTree = "<group>";
+		};
+		3082D7CA1D5CB95C004DBD2A /* Manifest */ = {
+			isa = PBXGroup;
+			children = (
+				3082D7CB1D5CB95C004DBD2A /* Manifest.swift */,
+				3082D7CC1D5CB95C004DBD2A /* ManifestFirmwareInfo.swift */,
+				3082D7CD1D5CB95C004DBD2A /* SoftdeviceBootloaderInfo.swift */,
+			);
+			path = Manifest;
+			sourceTree = "<group>";
+		};
 		522B81A61C7B2D280022B8EB /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
@@ -119,13 +157,6 @@
 				525EF61D1C74E8C0009260A7 /* DFUPeripheralDelegate.swift */,
 			);
 			name = Peripheral;
-			sourceTree = "<group>";
-		};
-		5254A9341C72218E00AA1164 /* Third Party Libraries */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = "Third Party Libraries";
 			sourceTree = "<group>";
 		};
 		525EF6091C7378F5009260A7 /* Hex to Bin Converter */ = {
@@ -158,6 +189,7 @@
 		52C12B541C6B8B28004D9DB8 = {
 			isa = PBXGroup;
 			children = (
+				4E6AE84A1D8F04E400845528 /* Zip.framework */,
 				52C12B601C6B8B28004D9DB8 /* DFULibrary */,
 				52C12B6C1C6B8B28004D9DB8 /* DFULibraryTests */,
 				52C12BA51C6CAC4E004D9DB8 /* Frameworks */,
@@ -221,6 +253,7 @@
 		52C12B861C6C949C004D9DB8 /* Implementation */ = {
 			isa = PBXGroup;
 			children = (
+				3082D7C91D5CB94F004DBD2A /* Utilities */,
 				522B81AD1C7E0F450022B8EB /* Peripheral */,
 				525EF61C1C74E17D009260A7 /* Service */,
 				525EF6151C74DD4F009260A7 /* Characteristics */,
@@ -233,8 +266,7 @@
 		52C12BA51C6CAC4E004D9DB8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4EEFA49A1CDCE96400ABDD50 /* EVReflection.framework */,
-				4EEFA4981CDCE91400ABDD50 /* Zip.framework */,
+				4E6AE8461D8EF5EA00845528 /* Zip.framework */,
 				52C12BA31C6CAC2F004D9DB8 /* libz.tbd */,
 			);
 			name = Frameworks;
@@ -255,7 +287,6 @@
 			isa = PBXGroup;
 			children = (
 				525EF6091C7378F5009260A7 /* Hex to Bin Converter */,
-				5254A9341C72218E00AA1164 /* Third Party Libraries */,
 				52C12B841C6C8F11004D9DB8 /* ZipArchive.swift */,
 			);
 			name = Utilities;
@@ -301,6 +332,7 @@
 				52C12B641C6B8B28004D9DB8 /* Sources */,
 				52C12B651C6B8B28004D9DB8 /* Frameworks */,
 				52C12B661C6B8B28004D9DB8 /* Resources */,
+				4E6AE8491D8F04BF00845528 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -325,9 +357,11 @@
 					52C12B5D1C6B8B28004D9DB8 = {
 						CreatedOnToolsVersion = 7.2;
 						DevelopmentTeam = P3R8YQEV4L;
+						LastSwiftMigration = 0800;
 					};
 					52C12B671C6B8B28004D9DB8 = {
 						CreatedOnToolsVersion = 7.2;
+						LastSwiftMigration = 0800;
 					};
 				};
 			};
@@ -373,9 +407,12 @@
 			files = (
 				52C12B8A1C6C95B5004D9DB8 /* DFUFirmware.swift in Sources */,
 				525EF60D1C737941009260A7 /* IntelHex2BinConverter.m in Sources */,
+				3082D7CF1D5CB95C004DBD2A /* ManifestFirmwareInfo.swift in Sources */,
+				3082D7D01D5CB95C004DBD2A /* SoftdeviceBootloaderInfo.swift in Sources */,
 				52C12B801C6B958E004D9DB8 /* LoggerDelegate.swift in Sources */,
 				525EF6171C74DD63009260A7 /* DFUVersion.swift in Sources */,
 				525EF61E1C74E8C0009260A7 /* DFUPeripheralDelegate.swift in Sources */,
+				3082D7CE1D5CB95C004DBD2A /* Manifest.swift in Sources */,
 				52C12B881C6C94B6004D9DB8 /* DFUExecutor.swift in Sources */,
 				52C12C211C6DF242004D9DB8 /* DFUStreamZip.swift in Sources */,
 				525EF6221C77423A009260A7 /* DFUService.swift in Sources */,
@@ -454,7 +491,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
@@ -500,7 +537,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
@@ -532,7 +569,7 @@
 				);
 				INFOPLIST_FILE = DFULibrary/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nordicsemi.DFULibrary;
@@ -541,6 +578,7 @@
 				SWIFT_INCLUDE_PATHS = "${SRCROOT}/DFULibrary/Zip/minizip ${SRCROOT}/DFULibrary/HexToBinConverter";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0;
 				VALID_ARCHS = "$(VALID_ARCHS)";
 			};
 			name = Debug;
@@ -565,7 +603,7 @@
 				);
 				INFOPLIST_FILE = DFULibrary/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nordicsemi.DFULibrary;
@@ -573,6 +611,7 @@
 				SKIP_INSTALL = NO;
 				SWIFT_INCLUDE_PATHS = "${SRCROOT}/DFULibrary/Zip/minizip ${SRCROOT}/DFULibrary/HexToBinConverter";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_VERSION = 3.0;
 				VALID_ARCHS = "$(VALID_ARCHS)";
 			};
 			name = Release;
@@ -580,20 +619,30 @@
 		52C12B761C6B8B28004D9DB8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = DFULibraryTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.nordicsemi.DFULibraryTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
 		52C12B771C6B8B28004D9DB8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = DFULibraryTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.nordicsemi.DFULibraryTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};

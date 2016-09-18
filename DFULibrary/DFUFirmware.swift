@@ -129,8 +129,8 @@ The type of the BIN or HEX file.
         
         // Quickly check if it's a BIN file
         let ext = urlToBinOrHexFile.pathExtension
-        let bin = ext != nil && ext!.caseInsensitiveCompare("bin") == .OrderedSame
-        let hex = ext != nil && ext!.caseInsensitiveCompare("hex") == .OrderedSame
+        let bin = ext != nil && ext!.caseInsensitiveCompare("bin") == .orderedSame
+        let hex = ext != nil && ext!.caseInsensitiveCompare("hex") == .orderedSame
         if !bin && !hex {
             NSLog("\(self.fileName) is not a BIN or HEX file")
             stream = nil
@@ -140,7 +140,7 @@ The type of the BIN or HEX file.
         
         if let datUrl = urlToDatFile {
             let datExt = datUrl.pathExtension
-            if datExt == nil || datExt!.caseInsensitiveCompare("dat") != .OrderedSame {
+            if datExt == nil || datExt!.caseInsensitiveCompare("dat") != .orderedSame {
                 NSLog("\(self.fileName) is not a DAT file")
                 stream = nil
                 super.init()

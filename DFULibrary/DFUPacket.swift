@@ -26,7 +26,7 @@ internal class DFUPacket {
     static private let UUID = CBUUID(string: "00001532-1212-EFDE-1523-785FEABCD123")
     
     static func matches(characteristic:CBCharacteristic) -> Bool {
-        return characteristic.UUID.isEqual(UUID)
+        return characteristic.uuid.isEqual(UUID)
     }
     
     private let PacketSize = 20
@@ -42,7 +42,7 @@ internal class DFUPacket {
     private var lastTime:CFAbsoluteTime?
     
     var valid:Bool {
-        return characteristic.properties.contains(CBCharacteristicProperties.WriteWithoutResponse)
+        return characteristic.properties.contains(CBCharacteristicProperties.writeWithoutResponse)
     }
     
     init(_ characteristic:CBCharacteristic, _ logger:LoggerHelper) {
@@ -65,15 +65,22 @@ internal class DFUPacket {
         var sdSize = size.softdevice.littleEndian
         var blSize = size.bootloader.littleEndian
         var appSize = size.application.littleEndian
-        withUnsafePointers(&sdSize, &blSize, &appSize) {
-            sdSize, blSize, appSize in
-            data.appendBytes(UnsafePointer(sdSize), length: 4)
-            data.appendBytes(UnsafePointer(blSize), length: 4)
-            data.appendBytes(UnsafePointer(appSize), length: 4)
-        }
-        logger.v("Writing image sizes (\(size.softdevice)b, \(size.bootloader)b, \(size.application)b) to characteristic \(DFUPacket.UUID.UUIDString)...")
-        logger.d("peripheral.writeValue(0x\(data.hexString), forCharacteristic: \(DFUVersion.UUID.UUIDString), type: WithoutResponse)")
-        peripheral.writeValue(data, forCharacteristic: characteristic, type: CBCharacteristicWriteType.WithoutResponse)
+		withUnsafePointer(to: &sdSize) {
+			sdSize in
+			data.append(UnsafePointer(sdSize), length: 4)
+		}
+		withUnsafePointer(to: &blSize) {
+			blSize in
+			data.append(UnsafePointer(blSize), length: 4)
+		}
+		withUnsafePointer(to: &appSize) {
+			appSize in
+			data.append(UnsafePointer(appSize), length: 4)
+		}
+
+        logger.v("Writing image sizes (\(size.softdevice)b, \(size.bootloader)b, \(size.application)b) to characteristic \(DFUPacket.UUID.uuidString)...")
+        logger.d("peripheral.writeValue(0x\((data as Data).hexString), forCharacteristic: \(DFUVersion.UUID.uuidString), type: WithoutResponse)")
+        peripheral.writeValue(data as Data, for: characteristic, type: CBCharacteristicWriteType.withoutResponse)
     }
     
     /**
@@ -87,13 +94,13 @@ internal class DFUPacket {
         
         let data = NSMutableData(capacity: 4)!
         var appSize = size.application.littleEndian
-        withUnsafePointer(&appSize) {
+        withUnsafePointer(to: &appSize) {
             appSize in
-            data.appendBytes(UnsafePointer(appSize), length: 4)
+            data.append(UnsafePointer(appSize), length: 4)
         }
-        logger.v("Writing image size (\(size.application)b) to characteristic \(DFUPacket.UUID.UUIDString)...")
-        logger.d("peripheral.writeValue(0x\(data.hexString), forCharacteristic: \(DFUVersion.UUID.UUIDString), type: WithoutResponse)")
-        peripheral.writeValue(data, forCharacteristic: characteristic, type: CBCharacteristicWriteType.WithoutResponse)
+        logger.v("Writing image size (\(size.application)b) to characteristic \(DFUPacket.UUID.uuidString)...")
+        logger.d("peripheral.writeValue(0x\((data as Data).hexString), forCharacteristic: \(DFUVersion.UUID.uuidString), type: WithoutResponse)")
+        peripheral.writeValue(data as Data, for: characteristic, type: CBCharacteristicWriteType.withoutResponse)
     }
     
     /**
@@ -111,11 +118,11 @@ internal class DFUPacket {
         
         repeat {
             let packetLength = min(bytesToSend, PacketSize)
-            let packet = data.subdataWithRange(NSRange(location: offset, length: packetLength))
+            let packet = data.subdata(with: NSRange(location: offset, length: packetLength))
             
-            logger.v("Writing to characteristic \(DFUPacket.UUID.UUIDString)...")
-            logger.d("peripheral.writeValue(0x\(packet.hexString), forCharacteristic: \(DFUVersion.UUID.UUIDString), type: WithoutResponse)")
-            peripheral.writeValue(packet, forCharacteristic: characteristic, type: CBCharacteristicWriteType.WithoutResponse)
+            logger.v("Writing to characteristic \(DFUPacket.UUID.uuidString)...")
+            logger.d("peripheral.writeValue(0x\(packet.hexString), forCharacteristic: \(DFUVersion.UUID.uuidString), type: WithoutResponse)")
+            peripheral.writeValue(packet, for: characteristic, type: CBCharacteristicWriteType.withoutResponse)
             
             offset += packetLength
             bytesToSend -= packetLength
@@ -157,9 +164,9 @@ internal class DFUPacket {
         while packetsToSendNow > 0 {
             let bytesLeft = bytesTotal - bytesSent
             let packetLength = min(bytesLeft, PacketSize)
-            let packet = firmware.data.subdataWithRange(NSRange(location: bytesSent, length: packetLength))
+            let packet = firmware.data.subdata(with: NSRange(location: bytesSent, length: packetLength))
             
-            peripheral.writeValue(packet, forCharacteristic: characteristic, type: CBCharacteristicWriteType.WithoutResponse)
+            peripheral.writeValue(packet, for: characteristic, type: CBCharacteristicWriteType.withoutResponse)
             
             bytesSent += packetLength
             packetsToSendNow -= 1
@@ -176,14 +183,14 @@ internal class DFUPacket {
             if currentProgress > progress {
                 let avgSpeed = Double(bytesSent) / (now - startTime!)
                 
-                dispatch_async(dispatch_get_main_queue(), {
+                DispatchQueue.main.async {
                     progressDelegate?.onUploadProgress(
-                        firmware.currentPart,
+                        part: firmware.currentPart,
                         totalParts: firmware.parts,
                         progress: currentProgress,
                         currentSpeedBytesPerSecond: currentSpeed,
                         avgSpeedBytesPerSecond: avgSpeed)
-                })
+                }
                 progress = currentProgress
             }
         }

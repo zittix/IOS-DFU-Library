@@ -49,7 +49,7 @@ import CoreBluetooth
      
      - returns: true (YES) if given peripheral is what service is looking for
      */
-    func select(peripheral:CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) -> Bool
+    func select(peripheral:CBPeripheral, advertisementData: [String : Any], RSSI: NSNumber) -> Bool
     
     /**
      Returns an optional list of services that the scanner will use to filter advertising packets
@@ -65,7 +65,7 @@ import CoreBluetooth
 
 /// The default selector. Returns the first device with DFU Service UUID in the advrtising packet.
 @objc internal class DefaultDFUPeripheralSelector : NSObject, DFUPeripheralSelector {
-    func select(peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) -> Bool {
+    func select(peripheral: CBPeripheral, advertisementData: [String : Any], RSSI: NSNumber) -> Bool {
         return true
     }
     
@@ -219,7 +219,7 @@ import CoreBluetooth
     public func start() -> DFUServiceController? {
         // The firmware file must be specified before calling `start()`
         if file == nil {
-            delegate?.didErrorOccur(DFUError.FileNotSpecified, withMessage: "Firmware not specified")
+            delegate?.didErrorOccur(error: DFUError.FileNotSpecified, withMessage: "Firmware not specified")
             return nil
         }
         

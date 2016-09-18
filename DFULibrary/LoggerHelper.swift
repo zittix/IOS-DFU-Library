@@ -27,35 +27,35 @@ internal class LoggerHelper {
         self.initiator = initiator
     }
     
-    func d(message:String) {
-        self.initiator.logger?.logWith(.Debug, message: message)
+    func d(_ message:String) {
+        self.initiator.logger?.logWith(level: .Debug, message: message)
     }
     
-    func v(message:String) {
-        self.initiator.logger?.logWith(.Verbose, message: message)
+    func v(_ message:String) {
+        self.initiator.logger?.logWith(level: .Verbose, message: message)
     }
     
-    func i(message:String) {
-        self.initiator.logger?.logWith(.Info, message: message)
+    func i(_ message:String) {
+        self.initiator.logger?.logWith(level: .Info, message: message)
     }
     
-    func a(message:String) {
-        self.initiator.logger?.logWith(.Application, message: message)
+    func a(_ message:String) {
+        self.initiator.logger?.logWith(level: .Application, message: message)
     }
     
-    func w(message:String) {
-        self.initiator.logger?.logWith(.Warning, message: message)
+    func w(_ message:String) {
+        self.initiator.logger?.logWith(level: .Warning, message: message)
     }
     
-    func w(error:NSError) {
-        self.initiator.logger?.logWith(.Warning, message: "Error \(error.code): \(error.localizedDescription)");
+    func w(_ error:Error) {
+        self.initiator.logger?.logWith(level: .Warning, message: "Error \(error)");
     }
     
-    func e(message:String) {
-        self.initiator.logger?.logWith(.Error, message: message)
+    func e(_ message:String) {
+        self.initiator.logger?.logWith(level: .Error, message: message)
     }
     
-    func e(error:NSError) {
-        self.initiator.logger?.logWith(.Error, message: "Error \(error.code): \(error.localizedDescription)");
+    func e(_ error:Error) {
+        self.initiator.logger?.logWith(level: .Error, message: "Error \(error)");
     }
 }

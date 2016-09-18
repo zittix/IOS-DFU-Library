@@ -22,7 +22,7 @@
 
 import CoreBluetooth
 
-internal typealias ProgressCallback = (bytesReceived:Int) -> Void
+internal typealias ProgressCallback = (_ bytesReceived:Int) -> Void
 
 internal enum OpCode : UInt8 {
     case StartDfu = 1
@@ -94,12 +94,12 @@ internal enum Request {
         case .PacketReceiptNotificationRequest(let number):
             let data = NSMutableData(capacity: 5)!
             let bytes:[UInt8] = [OpCode.PacketReceiptNotificationRequest.code]
-            data.appendBytes(bytes, length: 1)
+            data.append(bytes, length: 1)
             var n = number.littleEndian
-            withUnsafePointer(&n) {
-                data.appendBytes(UnsafePointer($0), length: 2)
+            withUnsafePointer(to: &n) {
+                data.append(UnsafePointer($0), length: 2)
             }
-            return NSData(data: data)
+            return NSData(data: data as Data)
         }
     }
     
@@ -202,7 +202,7 @@ internal struct PacketReceiptNotification {
     static let UUID = CBUUID(string: "00001531-1212-EFDE-1523-785FEABCD123")
     
     static func matches(characteristic:CBCharacteristic) -> Bool {
-        return characteristic.UUID.isEqual(UUID)
+        return characteristic.uuid.isEqual(UUID)
     }
     
     private var characteristic:CBCharacteristic
@@ -216,7 +216,7 @@ internal struct PacketReceiptNotification {
     private var resetSent:Bool = false
     
     var valid:Bool {
-        return characteristic.properties.isSupersetOf([CBCharacteristicProperties.Write, CBCharacteristicProperties.Notify])
+        return characteristic.properties.isSuperset(of: [CBCharacteristicProperties.write, CBCharacteristicProperties.notify])
     }
     
     // MARK: - Initialization
@@ -246,9 +246,9 @@ internal struct PacketReceiptNotification {
         // Set the peripheral delegate to self
         peripheral.delegate = self
         
-        logger.v("Enabling notifiactions for \(DFUControlPoint.UUID.UUIDString)...")
-        logger.d("peripheral.setNotifyValue(true, forCharacteristic: \(DFUControlPoint.UUID.UUIDString))")
-        peripheral.setNotifyValue(true, forCharacteristic: characteristic)
+        logger.v("Enabling notifiactions for \(DFUControlPoint.UUID.uuidString)...")
+        logger.d("peripheral.setNotifyValue(true, forCharacteristic: \(DFUControlPoint.UUID.uuidString))")
+        peripheral.setNotifyValue(true, for: characteristic)
     }
     
     func send(request:Request, onSuccess success:Callback?, onError report:ErrorCallback?) {
@@ -278,9 +278,9 @@ internal struct PacketReceiptNotification {
         default:
             break
         }
-        logger.v("Writing to characteristic \(DFUControlPoint.UUID.UUIDString)...")
-        logger.d("peripheral.writeValue(0x\(request.data.hexString), forCharacteristic: \(DFUControlPoint.UUID.UUIDString), type: WithResponse)")
-        peripheral.writeValue(request.data, forCharacteristic: characteristic, type: CBCharacteristicWriteType.WithResponse)
+        logger.v("Writing to characteristic \(DFUControlPoint.UUID.uuidString)...")
+        logger.d("peripheral.writeValue(0x\((request.data as Data).hexString), forCharacteristic: \(DFUControlPoint.UUID.uuidString), type: WithResponse)")
+        peripheral.writeValue(request.data as Data, for: characteristic, type: CBCharacteristicWriteType.withResponse)
     }
     
     func waitUntilUploadComplete(onSuccess success:Callback?, onPacketReceiptNofitication proceed:ProgressCallback?, onError report:ErrorCallback?) {
@@ -302,24 +302,24 @@ internal struct PacketReceiptNotification {
     
     // MARK: - Peripheral Delegate callbacks
     
-    func peripheral(peripheral: CBPeripheral, didUpdateNotificationStateForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if error != nil {
             logger.e("Enabling notifications failed")
             logger.e(error!)
-            report?(error:DFUError.EnablingControlPointFailed, withMessage:"Enabling notifications failed")
+            report?(DFUError.EnablingControlPointFailed, "Enabling notifications failed")
         } else {
-            logger.v("Notifications enabled for \(DFUVersion.UUID.UUIDString)")
+            logger.v("Notifications enabled for \(DFUVersion.UUID.uuidString)")
             logger.a("DFU Control Point notifications enabled")
             success?()
         }
     }
     
-    func peripheral(peripheral: CBPeripheral, didWriteValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if error != nil {
             if !self.resetSent {
                 logger.e("Writing to characteristic failed")
                 logger.e(error!)
-                report?(error:DFUError.WritingCharacteristicFailed, withMessage:"Writing to characteristic failed")
+                report?(DFUError.WritingCharacteristicFailed, "Writing to characteristic failed")
             } else {
                 // When a 'JumpToBootloader', 'Activate and Reset' or 'Reset' command is sent the device may reset before sending the acknowledgement.
                 // This is not a blocker, as the device did disconnect and reset successfully.
@@ -329,13 +329,13 @@ internal struct PacketReceiptNotification {
                 success?()
             }
         } else {
-            logger.i("Data written to \(DFUControlPoint.UUID.UUIDString)")
+            logger.i("Data written to \(DFUControlPoint.UUID.uuidString)")
             
             switch request! {
             case .StartDfu(_), .StartDfu_v1,  .ValidateFirmware:
                 logger.a("\(request!.description) request sent")
                 // do not call success until we get a notification
-            case .JumpToBootloader, .ReceiveFirmwareImage, .ActivateAndReset, .Reset, .PacketReceiptNotificationRequest(_):
+            case .JumpToBootloader, .ActivateAndReset, .Reset, .PacketReceiptNotificationRequest(_):
                 logger.a("\(request!.description) request sent")
                 // there will be no notification send after these requests, call success() immetiatelly
                 // (for .ReceiveFirmwareImage the notification will be sent after firmware upload is complete)
@@ -344,32 +344,37 @@ internal struct PacketReceiptNotification {
                 // Log was created before sending the Op Code
                 
                 // do not call success until we get a notification
-                break;
+                break
+            case .ReceiveFirmwareImage:
+                if proceed == nil {
+                    success?()
+                }
+                break
             }
         }
     }
     
-    func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         if error != nil {
             // This characteristic is never read, the error may only pop up when notification is received
             logger.e("Receiving notification failed")
             logger.e(error!)
-            report?(error:DFUError.ReceivingNotificatinoFailed, withMessage:"Receiving notification failed")
+            report?(DFUError.ReceivingNotificatinoFailed, "Receiving notification failed")
         } else {
             // During the upload we may get either a Packet Receipt Notification, or a Response with status code
             if proceed != nil {
-                if let prn = PacketReceiptNotification(characteristic.value!) {
-                    proceed!(bytesReceived: prn.bytesReceived)
+                if let prn = PacketReceiptNotification(characteristic.value! as NSData) {
+                    proceed!(prn.bytesReceived)
                     return
                 }
             }
             // Otherwise...
             proceed = nil
             
-            logger.i("Notification received from \(DFUVersion.UUID.UUIDString), value (0x):\(characteristic.value!.hexString)")
+            logger.i("Notification received from \(DFUVersion.UUID.uuidString), value (0x):\(characteristic.value!.hexString)")
             
             // Parse response received
-            let response = Response(characteristic.value!)
+            let response = Response(characteristic.value! as NSData)
             if let response = response {
                 logger.a("\(response.description) received")
                 
@@ -379,18 +384,18 @@ internal struct PacketReceiptNotification {
                         logger.a("Initialize DFU Parameters completed")
                     case .ReceiveFirmwareImage:
                         let interval = CFAbsoluteTimeGetCurrent() - uploadStartTime! as CFTimeInterval
-                        logger.a("Upload completed in \(interval.format(".2")) seconds")
+                        logger.a("Upload completed in \(interval.format(f: ".2")) seconds")
                     default:
                         break
                     }
                     success?()
                 } else {
                     logger.e("Error \(response.status!.code): \(response.status!.description)")
-                    report?(error: DFUError(rawValue: Int(response.status!.rawValue))!, withMessage: response.status!.description)
+                    report?(DFUError(rawValue: Int(response.status!.rawValue))!, response.status!.description)
                 }
             } else {
                 logger.e("Unknown response received: 0x\(characteristic.value!.hexString)")
-                report?(error:DFUError.UnsupportedResponse, withMessage:"Writing to characteristic failed")
+                report?(DFUError.UnsupportedResponse, "Writing to characteristic failed")
             }
         }
     }

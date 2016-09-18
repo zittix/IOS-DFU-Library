@@ -49,11 +49,11 @@ internal class DFUStreamBin : DFUStream {
     }
     
     init(urlToBinFile:NSURL, urlToDatFile:NSURL?, type:DFUFirmwareType) {
-        binaries = NSData.init(contentsOfURL: urlToBinFile)!
+		binaries = NSData.init(contentsOf: urlToBinFile as URL)!
         firmwareSize = UInt32(binaries.length)
         
         if let dat = urlToDatFile {
-            initPacketBinaries = NSData.init(contentsOfURL: dat)
+            initPacketBinaries = NSData.init(contentsOf: dat as URL)
         }
         
         self.currentPartType = type.rawValue

@@ -50,12 +50,12 @@ internal class DFUStreamHex : DFUStream {
     }
     
     init(urlToHexFile:NSURL, urlToDatFile:NSURL?, type:DFUFirmwareType) {
-        let hexData = NSData.init(contentsOfURL: urlToHexFile)
-        binaries = IntelHex2BinConverter.convert(hexData)
+        let hexData = NSData.init(contentsOf: urlToHexFile as URL)
+        binaries = IntelHex2BinConverter.convert(hexData as Data!) as NSData
         firmwareSize = UInt32(binaries.length)
         
         if let dat = urlToDatFile {
-            initPacketBinaries = NSData.init(contentsOfURL: dat)
+            initPacketBinaries = NSData.init(contentsOf: dat as URL)
         }
         
         self.currentPartType = type.rawValue

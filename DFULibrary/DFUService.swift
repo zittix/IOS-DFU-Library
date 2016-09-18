@@ -22,16 +22,18 @@
 
 import CoreBluetooth
 
-internal typealias Callback = Void -> Void
-internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
+internal typealias Callback = (Void) -> Void
+internal typealias ErrorCallback = (_ error:DFUError, _ withMessage:String) -> Void
 
 @objc internal class DFUService : NSObject, CBPeripheralDelegate {
     static internal let UUID = CBUUID.init(string: "00001530-1212-EFDE-1523-785FEABCD123")
     
     static func matches(service:CBService) -> Bool {
-        return service.UUID.isEqual(UUID)
+        return service.uuid.isEqual(UUID)
     }
-    
+    /// The target DFU Peripheral
+    var targetPeripheral : DFUPeripheral?
+
     /// The logger helper.
     private var logger:LoggerHelper
     /// The service object from CoreBluetooth used to initialize the DFUService instance.
@@ -70,7 +72,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
     /**
     Discovers characteristics in the DFU Service. This method also reads the DFU Version characteristic if such found.
     */
-    func discoverCharacteristics(onSuccess success: Callback, onError report:ErrorCallback) {
+    func discoverCharacteristics(onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         // Save callbacks
         self.success = success
         self.report = report
@@ -84,7 +86,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
         // Discover DFU characteristics
         logger.v("Discovering characteristics in DFU Service...")
         logger.d("peripheral.discoverCharacteristics(nil, forService:DFUService)")
-        peripheral.discoverCharacteristics(nil, forService:service)
+        peripheral.discoverCharacteristics(nil, for:service)
     }
     
     /**
@@ -124,7 +126,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter success: method called when notifications were enabled without a problem
      - parameter report:  method called when an error occurred
      */
-    func enableControlPoint(onSuccess success: Callback, onError report:ErrorCallback) {
+    func enableControlPoint(onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         if !aborted {
             dfuControlPointCharacteristic!.enableNotifications(onSuccess: success, onError: report)
         } else {
@@ -137,9 +139,9 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      
      - parameter report:  method called when an error occurred
      */
-    func jumpToBootloaderMode(onError report:ErrorCallback) {
+    func jumpToBootloaderMode(onError report:@escaping ErrorCallback) {
         if !aborted {
-            dfuControlPointCharacteristic!.send(Request.JumpToBootloader, onSuccess: nil, onError: report)
+            dfuControlPointCharacteristic!.send(request: Request.JumpToBootloader, onSuccess: nil, onError: report)
         } else {
             sendReset(onError: report)
         }
@@ -154,7 +156,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter success: a callback called when a response with status Success is received
      - parameter report:  a callback called when a response with an error status is received
      */
-    func sendDfuStartWithFirmwareType(type:UInt8, andSize size:DFUFirmwareSize, onSuccess success: Callback, onError report:ErrorCallback) {
+    func sendDfuStartWithFirmwareType(type:UInt8, andSize size:DFUFirmwareSize, onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         if aborted {
             sendReset(onError: report)
             return
@@ -163,8 +165,16 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
         // 1. Sends the Start DFU command with the firmware type to DFU Control Point characteristic
         // 2. Sends firmware sizes to DFU Packet characteristic
         // 3. Receives response notification and calls onSuccess or onError
-        dfuControlPointCharacteristic!.send(Request.StartDfu(type: type), onSuccess: success, onError: report)
-        dfuPacketCharacteristic!.sendFirmwareSize(size)
+        dfuControlPointCharacteristic!.send(request: Request.StartDfu(type: type), onSuccess: success) { (error, aMessage) in
+                if error == DFUError.RemoteInvalidState {
+                    self.targetPeripheral?.resetInvalidState()
+                    self.sendReset(onError: report)
+                    return
+                }
+                report(error, aMessage)
+        }
+
+        dfuPacketCharacteristic!.sendFirmwareSize(size: size)
     }
     
     /**
@@ -175,7 +185,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter success: a callback called when a response with status Success is received
      - parameter report:  a callback called when a response with an error status is received
      */
-    func sendStartDfuWithFirmwareSize(size:DFUFirmwareSize, onSuccess success: Callback, onError report:ErrorCallback) {
+    func sendStartDfuWithFirmwareSize(size:DFUFirmwareSize, onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         if aborted {
             sendReset(onError: report)
             return
@@ -184,8 +194,8 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
         // 1. Sends the Start DFU command with the firmware type to the DFU Control Point characteristic
         // 2. Sends firmware sizes to the DFU Packet characteristic
         // 3. Receives response notification and calls onSuccess or onError
-        dfuControlPointCharacteristic!.send(Request.StartDfu_v1, onSuccess: success, onError: report)
-        dfuPacketCharacteristic!.sendFirmwareSize_v1(size)
+        dfuControlPointCharacteristic!.send(request: Request.StartDfu_v1, onSuccess: success, onError: report)
+        dfuPacketCharacteristic!.sendFirmwareSize_v1(size: size)
     }
     
     /**
@@ -199,7 +209,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter success: a callback called when a response with status Success is received
      - parameter report:  a callback called when a response with an error status is received
      */
-    func sendInitPacket(data:NSData, onSuccess success: Callback, onError report:ErrorCallback) {
+    func sendInitPacket(data:NSData, onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         if aborted {
             sendReset(onError: report)
             return
@@ -216,23 +226,23 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
         if version != nil {
             if data.length < 14 {
                 // Init packet validation would have failed. We can safely abort here.
-                report(error: DFUError.ExtendedInitPacketRequired, withMessage: "Extended init packet required. Old one found instead.")
+                report(DFUError.ExtendedInitPacketRequired, "Extended init packet required. Old one found instead.")
                 return
             }
             // Since DFU v0.5, the Extended Init Packet may contain more than 20 bytes.
             // Therefore, there are 2 commands to the DFU Control Point required: one before we start sending init packet,
             // and another one the whole init packet is sent. After sending the second packet a notification will be received
-            dfuControlPointCharacteristic!.send(Request.InitDfuParameters(req: InitDfuParametersRequest.ReceiveInitPacket), onSuccess: nil, onError: report)
-            dfuPacketCharacteristic!.sendInitPacket(data)
-            dfuControlPointCharacteristic!.send(Request.InitDfuParameters(req: InitDfuParametersRequest.InitPacketComplete), onSuccess: success,
+            dfuControlPointCharacteristic!.send(request: Request.InitDfuParameters(req: InitDfuParametersRequest.ReceiveInitPacket), onSuccess: nil, onError: report)
+            dfuPacketCharacteristic!.sendInitPacket(data: data)
+            dfuControlPointCharacteristic!.send(request: Request.InitDfuParameters(req: InitDfuParametersRequest.InitPacketComplete), onSuccess: success,
                 onError: {
                     error, message in
                     if error == DFUError.RemoteOperationFailed {
                         // Init packet validation failed. The device type, revision, app version or Softdevice version 
                         // does not match values specified in the Init packet.
-                        report(error: error, withMessage: "Operation failed. Ensure the firmware targets that device type and version.")
+                        report(error, "Operation failed. Ensure the firmware targets that device type and version.")
                     } else {
-                        report(error: error, withMessage: message)
+                        report(error, message)
                     }
             })
         } else {
@@ -240,14 +250,14 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
             // There was a single command sent to the DFU Control Point (Op Code = 2), followed by the Init Packet transfer
             // to the DFU Packet characteristic. After receiving this packet the DFU target was sending a notification with status.
             if data.length == 2 {
-                dfuControlPointCharacteristic!.send(Request.InitDfuParameters_v1, onSuccess: success, onError: report)
-                dfuPacketCharacteristic!.sendInitPacket(data)
+                dfuControlPointCharacteristic!.send(request: Request.InitDfuParameters_v1, onSuccess: success, onError: report)
+                dfuPacketCharacteristic!.sendInitPacket(data: data)
             } else {
                 // After sending the Extended Init Packet, the DFU would fail on CRC validation eventually. 
                 
                 // NOTE!
                 // We can do 2 thing: abort, with an error:
-                report(error: DFUError.InitPacketRequired, withMessage: "Init packet with 2-byte CRC supported. Extended init packet found.")
+                report(DFUError.InitPacketRequired, "Init packet with 2-byte CRC supported. Extended init packet found.")
                 // ..or ignore it and do not send any init packet (not safe!):
                 // success()
             }
@@ -268,9 +278,9 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter success: a callback called when a response with status Success is received
      - parameter report:  a callback called when a response with an error status is received
      */
-    func sendPacketReceiptNotificationRequest(number:UInt16, onSuccess success: Callback, onError report:ErrorCallback) {
+    func sendPacketReceiptNotificationRequest(number:UInt16, onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         if !aborted {
-            dfuControlPointCharacteristic!.send(Request.PacketReceiptNotificationRequest(number: number), onSuccess: success, onError: report)
+            dfuControlPointCharacteristic!.send(request: Request.PacketReceiptNotificationRequest(number: number), onSuccess: success, onError: report)
         } else {
             sendReset(onError: report)
         }
@@ -287,7 +297,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter report:   a callback called when a response with an error status is received
      */
     func sendFirmware(firmware:DFUFirmware, withPacketReceiptNotificationNumber number:UInt16,
-        onProgress progressDelegate:DFUProgressDelegate?, onSuccess success: Callback, onError report:ErrorCallback) {
+        onProgress progressDelegate:DFUProgressDelegate?, onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
             if aborted {
                 sendReset(onError: report)
                 return
@@ -303,7 +313,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
             // 2. Sends firmware to the DFU Packet characteristic. If number > 0 it will receive Packet Receit Notifications
             //    every number packets.
             // 3. Receives response notification and calls onSuccess or onError
-            dfuControlPointCharacteristic!.send(Request.ReceiveFirmwareImage,
+            dfuControlPointCharacteristic!.send(request: Request.ReceiveFirmwareImage,
                 onSuccess: {
                     // Register callbacks for Packet Receipt Notifications/Responses
                     self.dfuControlPointCharacteristic!.waitUntilUploadComplete(
@@ -321,10 +331,10 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
                             if !self.paused && !self.aborted {
                                 let bytesSent = self.dfuPacketCharacteristic!.bytesSent
                                 if bytesSent == bytesReceived {
-                                    self.dfuPacketCharacteristic!.sendNext(number, packetsOf: firmware, andReportProgressTo: progressDelegate)
+                                    self.dfuPacketCharacteristic!.sendNext(number: number, packetsOf: firmware, andReportProgressTo: progressDelegate)
                                 } else {
                                     // Target device deported invalid number of bytes received
-                                    report(error:DFUError.BytesLost, withMessage: "\(bytesSent) bytes were sent while \(bytesReceived) bytes were reported as received")
+                                    report(DFUError.BytesLost, "\(bytesSent) bytes were sent while \(bytesReceived) bytes were reported as received")
                                 }
                             } else if self.aborted {
                                 // Upload has been aborted. Reset the target device. It will disconnect automatically
@@ -338,12 +348,12 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
                             self.packetReceiptNotificationNumber = nil
                             self.progressDelegate = nil
                             self.report = nil
-                            report(error: error, withMessage: message)
+                            report(error, message)
                         }
                     )
                     // ...and start sending firmware
                     if !self.paused && !self.aborted {
-                        self.dfuPacketCharacteristic!.sendNext(number, packetsOf: firmware, andReportProgressTo: progressDelegate)
+                        self.dfuPacketCharacteristic!.sendNext(number: number, packetsOf: firmware, andReportProgressTo: progressDelegate)
                     } else if self.aborted {
                         // Upload has been aborted. Reset the target device. It will disconnect automatically
                         self.sendReset(onError: report)
@@ -362,7 +372,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
         if !aborted && paused && firmware != nil {
             paused = false
             // onSuccess and onError callbacks are still kept by dfuControlPointCharacteristic
-            dfuPacketCharacteristic!.sendNext(packetReceiptNotificationNumber!, packetsOf: firmware!, andReportProgressTo: progressDelegate)
+            dfuPacketCharacteristic!.sendNext(number: packetReceiptNotificationNumber!, packetsOf: firmware!, andReportProgressTo: progressDelegate)
         }
         paused = false
     }
@@ -384,9 +394,9 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      - parameter success: a callback called when a response with status Success is received
      - parameter report:  a callback called when a response with an error status is received
      */
-    func sendValidateFirmwareRequest(onSuccess success: Callback, onError report:ErrorCallback) {
+    func sendValidateFirmwareRequest(onSuccess success: @escaping Callback, onError report:@escaping ErrorCallback) {
         if !aborted {
-            dfuControlPointCharacteristic!.send(Request.ValidateFirmware, onSuccess: success, onError: report)
+            dfuControlPointCharacteristic!.send(request: Request.ValidateFirmware, onSuccess: success, onError: report)
         } else {
             sendReset(onError: report)
         }
@@ -398,9 +408,9 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      
      - parameter report: a callback called when writing characteristic failed
      */
-    func sendActivateAndResetRequest(onError report:ErrorCallback) {
+    func sendActivateAndResetRequest(onError report:@escaping ErrorCallback) {
         if !aborted {
-            dfuControlPointCharacteristic!.send(Request.ActivateAndReset, onSuccess: nil, onError: report)
+            dfuControlPointCharacteristic!.send(request: Request.ActivateAndReset, onSuccess: nil, onError: report)
         } else {
             sendReset(onError: report)
         }
@@ -414,7 +424,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
     - parameter success: the callback called when supported version number has been received
     - parameter report:  the error callback which is called in case of an error, or when obtained data are not supported
     */
-    private func readDfuVersion(onSuccess success:Callback, onError report:ErrorCallback) {
+    private func readDfuVersion(onSuccess success:@escaping Callback, onError report:@escaping ErrorCallback) {
         dfuVersionCharacteristic!.readVersion(
             onSuccess: {
                 major, minor in
@@ -432,13 +442,13 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
      
      - parameter report: a callback called when writing characteristic failed
      */
-    private func sendReset(onError report:ErrorCallback) {
-        dfuControlPointCharacteristic!.send(Request.Reset, onSuccess: nil, onError: report)
+    private func sendReset(onError report:@escaping ErrorCallback) {
+        dfuControlPointCharacteristic!.send(request: Request.Reset, onSuccess: nil, onError: report)
     }
     
     // MARK: - Peripheral Delegate callbacks
     
-    func peripheral(peripheral: CBPeripheral, didDiscoverCharacteristicsForService service: CBService, error: NSError?) {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor forService: CBService, error: Error?) {
         // Create local references to callback to release the global ones
         let _success = self.success
         let _report = self.report
@@ -448,17 +458,17 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
         if error != nil {
             logger.e("Characteristics discovery failed")
             logger.e(error!)
-            _report?(error: DFUError.ServiceDiscoveryFailed, withMessage: "Characteristics discovery failed")
+            _report?(DFUError.ServiceDiscoveryFailed, "Characteristics discovery failed")
         } else {
             logger.i("DFU characteristics discovered")
             
             // Find DFU characteristics
             for characteristic in service.characteristics! {
-                if (DFUPacket.matches(characteristic)) {
+                if (DFUPacket.matches(characteristic: characteristic)) {
                     dfuPacketCharacteristic = DFUPacket(characteristic, logger)
-                } else if (DFUControlPoint.matches(characteristic)) {
+                } else if (DFUControlPoint.matches(characteristic: characteristic)) {
                     dfuControlPointCharacteristic = DFUControlPoint(characteristic, logger)
-                } else if (DFUVersion.matches(characteristic)) {
+                } else if (DFUVersion.matches(characteristic: characteristic)) {
                     dfuVersionCharacteristic = DFUVersion(characteristic, logger)
                 }
             }
@@ -467,13 +477,13 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
             if dfuControlPointCharacteristic == nil {
                 logger.e("DFU Control Point characteristics not found")
                 // DFU Control Point characteristic is required
-                _report?(error: DFUError.DeviceNotSupported, withMessage: "DFU Control Point characteristic not found")
+                _report?(DFUError.DeviceNotSupported, "DFU Control Point characteristic not found")
                 return
             }
             if !dfuControlPointCharacteristic!.valid {
                 logger.e("DFU Control Point characteristics must have Write and Notify properties")
                 // DFU Control Point characteristic must have Write and Notify properties
-                _report?(error: DFUError.DeviceNotSupported, withMessage: "DFU Control Point characteristic does not have the Write and Notify properties")
+                _report?(DFUError.DeviceNotSupported, "DFU Control Point characteristic does not have the Write and Notify properties")
                 return
             }
             
@@ -486,7 +496,7 @@ internal typealias ErrorCallback = (error:DFUError, withMessage:String) -> Void
                     readDfuVersion(onSuccess: _success!, onError: _report!)
                 } else {
                     version = nil
-                    _report?(error:DFUError.ReadingVersionFailed, withMessage:"DFU Version found, but does not have the Read property")
+                    _report?(DFUError.ReadingVersionFailed, "DFU Version found, but does not have the Read property")
                 }
             } else {
                 // Else... proceed

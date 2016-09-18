@@ -118,7 +118,7 @@
      
      - parameter state: the new state fo the service
      */
-    func didStateChangedTo(state:State)
+    func didStateChangedTo(_ state:State)
     
     /**
      Called after an error occurred.
